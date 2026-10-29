@@ -106,6 +106,62 @@
     for (const [id, value] of Object.entries(values)) if (el(id)) el(id).value = value || '';
     status('Cloud profile loaded. Choose Save academic profile to keep a local copy.');
   });
+  async function listAcademicClasses() {
+    const token = await accessToken();
+    const [classes, enrollments] = await Promise.all([
+      request('/rest/v1/veritashub_classes?select=id,title,subject_code,programme,academic_level,department,description&order=subject_code.asc', undefined, 'GET', token),
+      request('/rest/v1/veritashub_class_enrollments?select=class_id', undefined, 'GET', token)
+    ]);
+    const enrolled = new Set((enrollments || []).map(row => row.class_id));
+    const container = el('academicClassesList');
+    container.replaceChildren();
+    for (const cls of classes || []) {
+      const card = document.createElement('div');
+      card.className = 'list-item';
+      const detail = document.createElement('div');
+      detail.style.flex = '1';
+      const title = document.createElement('strong');
+      title.textContent = cls.subject_code + ' · ' + cls.title;
+      const description = document.createElement('p');
+      description.textContent = [cls.programme, cls.academic_level, cls.department, cls.description].filter(Boolean).join(' · ');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'chip';
+      const joined = enrolled.has(cls.id);
+      button.textContent = joined ? 'Leave class' : 'Join class';
+      button.addEventListener('click', () => changeAcademicEnrollment(cls.id, !joined));
+      detail.append(title, description);
+      card.append(detail, button);
+      container.append(card);
+    }
+    el('academicClassesStatus').textContent = (classes || []).length
+      ? 'Showing ' + classes.length + ' published class(es). Your enrollment is personal to your account.'
+      : 'No classes have been published yet. Please check back later.';
+  }
+  window.academicListClasses = () => runClasses(listAcademicClasses);
+  async function runClasses(action) {
+    try {
+      el('academicClassesStatus').textContent = 'Loading…';
+      await action();
+    } catch (err) {
+      el('academicClassesStatus').textContent = err.message || 'Unable to load classes.';
+    }
+  }
+  async function changeAcademicEnrollment(classId, join) {
+    await runClasses(async () => {
+      const token = await accessToken();
+      const user = await request('/auth/v1/user', undefined, 'GET', token);
+      if (join) {
+        await request('/rest/v1/veritashub_class_enrollments?on_conflict=user_id,class_id',
+          { user_id: user.id, class_id: classId }, 'POST', token, true);
+      } else {
+        await request('/rest/v1/veritashub_class_enrollments?class_id=eq.' +
+          encodeURIComponent(classId) + '&user_id=eq.' + encodeURIComponent(user.id),
+          undefined, 'DELETE', token);
+      }
+      await listAcademicClasses();
+    });
+  }
   document.addEventListener('DOMContentLoaded', () => {
     if (session()) status('Previous academic session found. Sign in again if it has expired.');
   });
