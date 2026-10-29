@@ -1,0 +1,112 @@
+/* Separate Supabase Auth connection for Veritas Hub academic profiles.
+ * Existing campus community Supabase configuration is intentionally unchanged.
+ * The publishable key is public; never use a secret or service-role key here.
+ */
+(function () {
+  'use strict';
+  const URL = 'https://wutgiojgomcsocfqxnml.supabase.co';
+  const KEY = 'sb_publishable_3-xb2zcXFzqfSiTKqip7Lw_6KF9qiI_';
+  const SESSION_KEY = 'veritas-academic-session';
+  const el = id => document.getElementById(id);
+  const status = message => { if (el('academicAuthStatus')) el('academicAuthStatus').textContent = message; };
+  function session() {
+    try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); }
+    catch (_) { return null; }
+  }
+  function store(data) {
+    if (!data || !data.access_token || !data.refresh_token) throw new Error('No active session. Confirm your email, then sign in.');
+    localStorage.setItem(SESSION_KEY, JSON.stringify({
+      access_token: data.access_token, refresh_token: data.refresh_token,
+      expires_at: Math.floor(Date.now() / 1000) + (Number(data.expires_in) || 3600),
+      user_id: data.user && data.user.id
+    }));
+  }
+  async function request(path, body, method = 'POST', token, upsert = false) {
+    const res = await fetch(URL + path, {
+      method,
+      headers: { apikey: KEY, 'Content-Type': 'application/json',
+        ...(token ? { Authorization: 'Bearer ' + token } : {}), ...(upsert ? { Prefer: 'resolution=merge-duplicates,return=minimal' } : {}) },
+      ...(body === undefined ? {} : { body: JSON.stringify(body) })
+    });
+    const raw = await res.text();
+    let data;
+    try { data = raw ? JSON.parse(raw) : null; } catch (_) { data = null; }
+    if (!res.ok) throw new Error((data && (data.msg || data.error_description || data.message || data.error)) || 'Request failed (' + res.status + ')');
+    return data;
+  }
+  async function accessToken() {
+    const current = session();
+    if (!current) throw new Error('Sign in to sync your academic profile.');
+    if (current.expires_at > Date.now() / 1000 + 60) return current.access_token;
+    try {
+      const refreshed = await request('/auth/v1/token?grant_type=refresh_token', { refresh_token: current.refresh_token });
+      store(refreshed);
+      return refreshed.access_token;
+    } catch (err) {
+      localStorage.removeItem(SESSION_KEY);
+      throw new Error('Your session expired. Please sign in again.');
+    }
+  }
+  async function run(action) {
+    try { status('Working…'); await action(); }
+    catch (err) { status(err.message || 'Something went wrong.'); }
+  }
+  window.academicSignUp = () => run(async () => {
+    const email = el('academicEmail').value.trim(), password = el('academicPassword').value;
+    if (!email || password.length < 8) throw new Error('Enter a valid email and a password with at least 8 characters.');
+    const data = await request('/auth/v1/signup', { email, password });
+    if (data && data.access_token) { store(data); status('Account created and signed in. You can save your profile to the cloud.'); }
+    else status('Check your email for a confirmation link, then sign in.');
+    el('academicPassword').value = '';
+  });
+  window.academicSignIn = () => run(async () => {
+    const email = el('academicEmail').value.trim(), password = el('academicPassword').value;
+    if (!email || !password) throw new Error('Enter your email and password.');
+    const data = await request('/auth/v1/token?grant_type=password', { email, password });
+    store(data);
+    el('academicPassword').value = '';
+    status('Signed in. Choose Load cloud profile or Save current profile to cloud.');
+  });
+  window.academicSignOut = () => run(async () => {
+    const current = session();
+    localStorage.removeItem(SESSION_KEY);
+    if (current && current.access_token) {
+      try { await request('/auth/v1/logout', undefined, 'POST', current.access_token); } catch (_) {}
+    }
+    status('Signed out of academic account. Your device-local profile is unchanged.');
+  });
+  window.academicSaveProfile = () => run(async () => {
+    const token = await accessToken();
+    const user = await request('/auth/v1/user', undefined, 'GET', token);
+    const value = id => (el(id).value || '').trim();
+    const profile = {
+      user_id: user.id, display_name: value('profileName'),
+      programme: value('profileProgramme'), academic_level: value('profileLevel'),
+      department: value('profileDepartment'), course_of_study: value('profileCourse'),
+      subjects: [...new Set(value('profileSubjects').split(',').map(s => s.trim()).filter(Boolean))].slice(0, 30),
+      interests: value('profileInterests'), updated_at: new Date().toISOString()
+    };
+    await request('/rest/v1/veritashub_academic_profiles?on_conflict=user_id',
+      profile, 'POST', token, true);
+    status('Academic profile saved securely to your account.');
+  });
+  window.academicLoadProfile = () => run(async () => {
+    const token = await accessToken();
+    const user = await request('/auth/v1/user', undefined, 'GET', token);
+    const rows = await request('/rest/v1/veritashub_academic_profiles?user_id=eq.' +
+      encodeURIComponent(user.id) + '&select=*', undefined, 'GET', token);
+    if (!Array.isArray(rows) || !rows.length) { status('No cloud profile yet. Fill the form and choose Save current profile to cloud.'); return; }
+    const p = rows[0];
+    const values = {
+      profileName: p.display_name, profileProgramme: p.programme,
+      profileLevel: p.academic_level, profileDepartment: p.department,
+      profileCourse: p.course_of_study, profileSubjects: (p.subjects || []).join(', '),
+      profileInterests: p.interests
+    };
+    for (const [id, value] of Object.entries(values)) if (el(id)) el(id).value = value || '';
+    status('Cloud profile loaded. Choose Save academic profile to keep a local copy.');
+  });
+  document.addEventListener('DOMContentLoaded', () => {
+    if (session()) status('Previous academic session found. Sign in again if it has expired.');
+  });
+})();
