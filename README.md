@@ -1,0 +1,2 @@
+# veritas-hub
+Student Project
