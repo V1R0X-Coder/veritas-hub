@@ -41,4 +41,8 @@ with tempfile.TemporaryDirectory() as tmp:
         path = Path(tmp) / f"script-{i}.mjs"
         path.write_text(code, encoding="utf-8")
         subprocess.run(["node", "--check", str(path)], check=True)
+external = root / "academic-auth.js"
+if 'src="academic-auth.js"' in source:
+    assert external.is_file(), "Missing academic auth JavaScript"
+    subprocess.run(["node", "--check", str(external)], check=True)
 print(f"Static site checks passed: {len(parser.buffers)} inline JavaScript block(s)")
