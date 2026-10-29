@@ -162,6 +162,50 @@
       await listAcademicClasses();
     });
   }
+  window.academicLoadLecturerDashboard = async () => {
+    const status = el('lecturerDashboardStatus');
+    const list = el('lecturerClassList');
+    list.replaceChildren();
+    try {
+      status.textContent = 'Checking verified lecturer permissions…';
+      const token = await accessToken();
+      const user = await request('/auth/v1/user', undefined, 'GET', token);
+      const lecturers = await request('/rest/v1/veritashub_lecturers?user_id=eq.' +
+        encodeURIComponent(user.id) + '&active=eq.true&select=user_id,display_name',
+        undefined, 'GET', token);
+      if (!Array.isArray(lecturers) || !lecturers.length) {
+        status.textContent = 'No active lecturer permission for this account. Contact the project administrator for verification.';
+        return;
+      }
+      const assignments = await request('/rest/v1/veritashub_lecturer_classes?lecturer_id=eq.' +
+        encodeURIComponent(user.id) + '&select=class_id', undefined, 'GET', token);
+      const ids = (assignments || []).map(row => row.class_id);
+      if (!ids.length) {
+        status.textContent = 'Verified lecturer: ' + lecturers[0].display_name + '. No classes assigned yet.';
+        return;
+      }
+      const classes = await request('/rest/v1/veritashub_classes?id=in.(' +
+        ids.map(encodeURIComponent).join(',') +
+        ')&select=id,title,subject_code,programme,academic_level,department',
+        undefined, 'GET', token);
+      for (const cls of classes || []) {
+        const card = document.createElement('div');
+        card.className = 'list-item';
+        const title = document.createElement('strong');
+        title.textContent = cls.subject_code + ' · ' + cls.title;
+        const meta = document.createElement('p');
+        meta.textContent = [cls.programme, cls.academic_level, cls.department].filter(Boolean).join(' · ');
+        const info = document.createElement('div');
+        info.append(title, meta);
+        card.append(info);
+        list.append(card);
+      }
+      status.textContent = 'Verified lecturer: ' + lecturers[0].display_name +
+        '. Showing ' + (classes || []).length + ' published assigned class(es).';
+    } catch (err) {
+      status.textContent = err.message || 'Unable to load lecturer assignments.';
+    }
+  };
   document.addEventListener('DOMContentLoaded', () => {
     if (session()) status('Previous academic session found. Sign in again if it has expired.');
   });
