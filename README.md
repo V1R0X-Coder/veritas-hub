@@ -85,3 +85,56 @@ This is a lightweight prototype metric, **not a verified count of individual peo
 4. Open the published site and check the **Veritas Hub Community** counter on the home dashboard.
 
 If the SQL has not been run yet, the website will show that the shared counter is unavailable. This migration creates a separate analytics table and function; it does not change forum or shared-content tables.
+
+
+## Academic platform expansion (planned, not yet live)
+
+> **Planning status:** This roadmap describes proposed enhancements. It does not mean the features below are implemented or deployed. Preserve all existing site features and student data throughout development.
+
+### Student academic profiles and enrollment (requirements 1–8)
+
+Students will be able to register or update their academic level, course, department/faculty, programme (including JUPEB where applicable), and subjects. Classroom, study materials, and assessment views should show only relevant enrolled classes. Validate academic selections and provide a way to correct them.
+
+### Lecturer-led live classrooms (requirements 9–20)
+
+Provide lecturer-led video sessions with the lecturer as primary broadcaster. Student microphones and cameras should be off by default, with text chat or question submission available. Show class/subject context, attendance, join/leave status, and materials. Support mobile screens and low-bandwidth conditions. The current external classroom links are **not** native live broadcasting; a suitable provider and cost model must be assessed before implementation.
+
+### Lecturer dashboard (requirements 21–31)
+
+Lecturers need authenticated access to their assigned subjects and classes, with controls to start/end lectures, manage participation, upload notes, set assignments and objective tests, configure answer keys, review scores, and track class performance. Campus utilities may remain available as optional navigation. The current role picker is a demonstration convenience, **not secure lecturer authentication**.
+
+### Class-specific notes and files (requirements 32–38)
+
+Allow authorized lecturers to upload permitted PDF, Word, PowerPoint, and other approved teaching files. Associate each resource with the appropriate programme, level, course, subject, and class. Enrolled students can view or download authorized resources. Preserve historical versions when materials are updated, with clear publication dates and file metadata.
+
+### Assignments, tests, and grading (requirements 39–56)
+
+Support objective question authoring with options, correct answers, marks per question, previews, deadlines, and publishing controls. Record student submissions and timestamps, auto-grade objective answers, calculate scores and percentages, and provide lecturer review and controlled score overrides. Define late-submission policies, result visibility, and answer-key release timing. Keep answer keys private until the configured release condition is met.
+
+## Safe engineering and delivery workflow
+
+The existing public site must remain usable throughout the expansion. No unrelated redesigns, destructive schema changes, or direct development commits to `main`.
+
+1. Create a scoped feature or documentation branch from `main`.
+2. Make small, reviewable changes with a focused commit.
+3. Open a pull request documenting scope, test evidence, security implications, and rollback.
+4. Run automated checks and review the diff. If CI is absent, add suitable checks rather than interpreting missing checks as success.
+5. Obtain review approval before merging.
+6. Confirm GitHub Pages deployment and smoke-test desktop and mobile experiences; revert or roll back regressions.
+
+### Implementation order
+
+1. **Foundation:** academic data model, verified student/lecturer identity, class enrollment, permissions, and Supabase row-level security.
+2. **Materials:** class-scoped resources, secure uploads, download permissions, and versioning.
+3. **Assessments:** lecturer authoring, deadlines, student submissions, auto-grading, score visibility, and result controls.
+4. **Live teaching:** choose a video provider after evaluating costs, privacy, attendance, moderation, and mobile network conditions.
+5. **Hardening:** regression testing, accessibility, performance, backups, staged rollout, and recovery rehearsals.
+
+### Acceptance criteria
+
+- Existing campus navigation, keke planner, food links, marketplace, lost and found, forums, notes, feedback, and visitor analytics still work.
+- Authorization is enforced by backend/database policies, not just hidden buttons or a role selector.
+- Students cannot view unrelated private records, restricted course files, or unreleased answer keys.
+- File uploads have safe size/type limits and restricted storage permissions.
+- Production migrations require backup and rollback plans.
+- A feature is called **live** only after it is reviewed, merged, deployed, and verified.
