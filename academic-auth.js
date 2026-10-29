@@ -206,6 +206,106 @@
       status.textContent = err.message || 'Unable to load lecturer assignments.';
     }
   };
+  function renderNoteList(target, notes) {
+    const container = el(target);
+    container.replaceChildren();
+    for (const note of notes) {
+      const item = document.createElement('article');
+      item.className = 'list-item';
+      const inner = document.createElement('div');
+      const heading = document.createElement('strong');
+      heading.textContent = note.title + (note.published ? '' : ' (draft)');
+      const body = document.createElement('p');
+      body.textContent = note.body;
+      body.style.whiteSpace = 'pre-wrap';
+      const date = document.createElement('small');
+      date.textContent = 'Published status: ' + (note.published ? 'visible to enrolled students' : 'draft');
+      inner.append(heading, body, date);
+      item.append(inner);
+      container.append(item);
+    }
+  }
+  async function verifiedTeachingClasses(token, userId) {
+    const lecturer = await request('/rest/v1/veritashub_lecturers?user_id=eq.' +
+      encodeURIComponent(userId) + '&active=eq.true&select=user_id', undefined, 'GET', token);
+    if (!lecturer || !lecturer.length) throw new Error('Only verified active lecturers can manage notes.');
+    const assigned = await request('/rest/v1/veritashub_lecturer_classes?lecturer_id=eq.' +
+      encodeURIComponent(userId) + '&select=class_id', undefined, 'GET', token);
+    const ids = (assigned || []).map(row => row.class_id);
+    if (!ids.length) return [];
+    return request('/rest/v1/veritashub_classes?id=in.(' + ids.map(encodeURIComponent).join(',') +
+      ')&select=id,title,subject_code&order=subject_code.asc', undefined, 'GET', token);
+  }
+  window.academicLoadStudentNotes = async () => {
+    const status = el('studentNotesStatus');
+    el('studentNotesList').replaceChildren();
+    try {
+      status.textContent = 'Loading your published notes…';
+      const token = await accessToken();
+      const enrollment = await request('/rest/v1/veritashub_class_enrollments?select=class_id', undefined, 'GET', token);
+      const ids = (enrollment || []).map(row => row.class_id);
+      if (!ids.length) { status.textContent = 'Join a published class to see its notes.'; return; }
+      const notes = await request('/rest/v1/veritashub_class_notes?published=eq.true&class_id=in.(' +
+        ids.map(encodeURIComponent).join(',') +
+        ')&select=id,title,body,published,created_at&order=created_at.desc', undefined, 'GET', token);
+      renderNoteList('studentNotesList', notes || []);
+      status.textContent = notes.length ? notes.length + ' published note(s) available.' : 'No published notes in your classes yet.';
+    } catch (err) { status.textContent = err.message || 'Unable to load notes.'; }
+  };
+  window.academicLoadLecturerNotes = async () => {
+    const status = el('lecturerNotesStatus');
+    el('lecturerNotesList').replaceChildren();
+    try {
+      status.textContent = 'Loading your notes…';
+      const token = await accessToken();
+      const user = await request('/auth/v1/user', undefined, 'GET', token);
+      const classes = await verifiedTeachingClasses(token, user.id);
+      const select = el('lecturerNoteClass');
+      const previous = select.value;
+      select.replaceChildren();
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Choose an assigned published class';
+      select.append(placeholder);
+      for (const cls of classes) {
+        const option = document.createElement('option');
+        option.value = cls.id;
+        option.textContent = cls.subject_code + ' · ' + cls.title;
+        select.append(option);
+      }
+      if (classes.some(c => c.id === previous)) select.value = previous;
+      if (!classes.length) { status.textContent = 'No published classes assigned to you.'; return; }
+      const notes = await request('/rest/v1/veritashub_class_notes?lecturer_id=eq.' +
+        encodeURIComponent(user.id) + '&select=id,title,body,published,created_at&order=created_at.desc',
+        undefined, 'GET', token);
+      renderNoteList('lecturerNotesList', notes || []);
+      status.textContent = notes.length + ' note(s) found. Choose a class to write a new note.';
+    } catch (err) { status.textContent = err.message || 'Unable to load lecturer notes.'; }
+  };
+  window.academicPublishNote = async () => {
+    const status = el('lecturerNotesStatus');
+    try {
+      status.textContent = 'Saving your note…';
+      const token = await accessToken();
+      const user = await request('/auth/v1/user', undefined, 'GET', token);
+      const classes = await verifiedTeachingClasses(token, user.id);
+      const classId = el('lecturerNoteClass').value;
+      if (!classes.some(c => c.id === classId)) throw new Error('Choose one of your assigned published classes.');
+      const title = el('lecturerNoteTitle').value.trim();
+      const body = el('lecturerNoteBody').value.trim();
+      if (title.length < 3 || title.length > 160 || !body || body.length > 20000)
+        throw new Error('Enter a title (3–160 characters) and a note (1–20,000 characters).');
+      await request('/rest/v1/veritashub_class_notes', {
+        class_id: classId, lecturer_id: user.id, title, body,
+        published: el('lecturerNotePublished').checked
+      }, 'POST', token, true);
+      el('lecturerNoteTitle').value = '';
+      el('lecturerNoteBody').value = '';
+      el('lecturerNotePublished').checked = false;
+      await window.academicLoadLecturerNotes();
+      status.textContent = 'Note saved successfully. ' + status.textContent;
+    } catch (err) { status.textContent = err.message || 'Unable to save note.'; }
+  };
   document.addEventListener('DOMContentLoaded', () => {
     if (session()) status('Previous academic session found. Sign in again if it has expired.');
   });
