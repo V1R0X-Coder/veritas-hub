@@ -73,3 +73,12 @@ if external.is_file():
         assert marker in assessment, f"Missing assessment workflow marker: {marker}"
     assert "'” now?\\\\n\\\\n'" not in assessment, "Publish confirmation contains escaped literal newlines"
 print(f"Static site checks passed: {len(parser.buffers)} inline JavaScript block(s)")
+
+# Answer-key release: ensure the UI uses only the authenticated server RPC.
+release_js = (root / "academic-auth.js").read_text(encoding="utf-8")
+assert "window.academicScheduleAnswerKeyRelease" in release_js
+assert "window.academicViewReleasedAnswerKey" in release_js
+assert "/rpc/veritashub_get_released_answer_key" in release_js
+release_sql = (root / "supabase/veritashub_answer_key_release.sql").read_text(encoding="utf-8")
+for required in ("auth.uid()", "veritashub_quiz_attempts", "answer_key_release_at", "clock_timestamp()", "revoke all on function public.veritashub_get_released_answer_key"):
+    assert required in release_sql, f"Answer key security regression: {required}"
