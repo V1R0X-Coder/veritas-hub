@@ -336,14 +336,14 @@
     const token = await accessToken();
     const response = await storageRequest(row.storage_path, token, 'GET');
     const blob = await response.blob();
-    const objectUrl = URL.createObjectURL(blob);
+    const objectUrl = window.URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = objectUrl;
     link.download = row.file_name;
     document.body.append(link);
     link.click();
     link.remove();
-    setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+    setTimeout(() => window.URL.revokeObjectURL(objectUrl), 60000);
   }
   function renderAcademicFiles(target, rows) {
     const container = el(target);
