@@ -912,7 +912,7 @@
         const answers = {};
         for (const item of inputs) {
           const selected = item.radios.find(radio => radio.checked);
-          if (!selected) { status.textContent = 'Answer every question before submitting.'; return; }
+          if (!selected) { status.textContent = 'Answer every question before submitting. The first unanswered question is highlighted.'; const fieldset = item.radios[0].closest('fieldset'); if (fieldset) { fieldset.scrollIntoView({behavior:'smooth',block:'center'}); item.radios[0].focus(); } return; }
           answers[item.id] = Number(selected.value);
         }
         if (!window.confirm('Submit your ' + questions.length +
