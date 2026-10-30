@@ -499,6 +499,8 @@
           !Number.isInteger(correct) || correct < 0 || correct > 3)
         throw new Error('Enter a title, question, exactly four nonempty answers, and the correct choice.');
       status.textContent = 'Saving private draft…';
+      const marks = askQuestionMarks();
+      if (marks === null) return;
       const response = await fetch(URL + '/rest/v1/veritashub_quizzes?select=id', {
         method:'POST', headers:{apikey:KEY,Authorization:'Bearer ' + token,
           'Content-Type':'application/json',Prefer:'return=representation'},
@@ -509,7 +511,7 @@
       const id = payload[0] && payload[0].id;
       if (!id) throw new Error('Draft created but no identifier returned. Contact support.');
       await request('/rest/v1/veritashub_quiz_questions', {
-        quiz_id:id,prompt,options,correct_index:correct,position:0
+        quiz_id:id,prompt,options,correct_index:correct,position:0,marks
       }, 'POST', token);
       el('quizDraftTitle').value = '';
       el('quizDraftPrompt').value = '';
@@ -549,8 +551,10 @@
         encodeURIComponent(quizId) + '&lecturer_id=eq.' + encodeURIComponent(user.id) +
         '&published=eq.false&select=id', undefined, 'GET', token);
       if (!drafts || drafts.length !== 1) throw new Error('Draft is unavailable or already published.');
+      const marks = askQuestionMarks();
+      if (marks === null) return;
       await request('/rest/v1/veritashub_quiz_questions', {
-        quiz_id:quizId, prompt:question, options:answers, correct_index:Number(chosen.trim())-1
+        quiz_id:quizId, prompt:question, options:answers, correct_index:Number(chosen.trim())-1, marks
       }, 'POST', token);
       status.textContent = 'Question added to your private draft. Review the draft before publishing.';
     } catch (err) {
@@ -558,6 +562,12 @@
     } finally {
       button.disabled = false;
     }
+  };
+  const askQuestionMarks = (initial = 1) => {
+    const raw = window.prompt('Marks for this question (1–100):', String(initial));
+    if (raw === null) return null;
+    if (!/^(?:[1-9]|[1-9][0-9]|100)$/.test(raw.trim())) throw new Error('Enter a whole number of marks between 1 and 100.');
+    return Number(raw.trim());
   };
   window.academicEditDraftQuestion = async (quizId, question, title, button) => {
     const status = el('lecturerQuizStatus');
@@ -593,16 +603,18 @@
         encodeURIComponent(quizId) + '&lecturer_id=eq.' + encodeURIComponent(user.id) +
         '&published=eq.false&select=id', undefined, 'GET', token);
       if (!Array.isArray(drafts) || drafts.length !== 1) throw new Error('Draft no longer editable.');
+      const marks = askQuestionMarks(question.marks || 1);
+      if (marks === null) return;
       const updated = await request('/rest/v1/veritashub_quiz_questions?id=eq.' +
         encodeURIComponent(question.id) + '&quiz_id=eq.' + encodeURIComponent(quizId) +
-        '&select=id', {prompt:promptValue,options,correct_index:Number(selected.trim())-1}, 'PATCH', token);
+        '&select=id', {prompt:promptValue,options,correct_index:Number(selected.trim())-1,marks}, 'PATCH', token);
       // Re-read the draft to confirm the update actually persisted under RLS.
       const verify = await request('/rest/v1/veritashub_quiz_questions?id=eq.' +
         encodeURIComponent(question.id) + '&quiz_id=eq.' + encodeURIComponent(quizId) +
-        '&select=id,prompt,options,correct_index', undefined, 'GET', token);
+        '&select=id,prompt,options,correct_index,marks', undefined, 'GET', token);
       if (!Array.isArray(verify) || verify.length !== 1 ||
           verify[0].prompt !== promptValue || JSON.stringify(verify[0].options) !== JSON.stringify(options) ||
-          verify[0].correct_index !== Number(selected.trim())-1) {
+          verify[0].correct_index !== Number(selected.trim())-1 || verify[0].marks !== marks) {
         throw new Error('Question update could not be verified. Check your permissions.');
       }
       await window.academicPreviewDraftQuiz(quizId, title, button);
@@ -626,7 +638,7 @@
         '&published=eq.false&select=id,title', undefined, 'GET', token);
       if (!Array.isArray(drafts) || drafts.length !== 1) throw new Error('Draft not found or already published.');
       const questions = await request('/rest/v1/veritashub_quiz_questions?quiz_id=eq.' +
-        encodeURIComponent(quizId) + '&select=id,prompt,options,correct_index&order=created_at.asc',
+        encodeURIComponent(quizId) + '&select=id,prompt,options,correct_index,marks&order=created_at.asc',
         undefined, 'GET', token);
       const heading = document.createElement('h3');
       heading.textContent = 'Draft preview: ' + title;

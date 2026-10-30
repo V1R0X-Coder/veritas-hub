@@ -73,3 +73,12 @@ if external.is_file():
         assert marker in assessment, f"Missing assessment workflow marker: {marker}"
     assert "'” now?\\\\n\\\\n'" not in assessment, "Publish confirmation contains escaped literal newlines"
 print(f"Static site checks passed: {len(parser.buffers)} inline JavaScript block(s)")
+
+# Weighted grading and draft edit permissions must remain wired together.
+marks_js = (root / "academic-auth.js").read_text(encoding="utf-8")
+assert "askQuestionMarks" in marks_js
+assert "marks}, 'PATCH'" in marks_js
+weighted_sql = (root / "supabase/veritashub_weighted_quiz_grading.sql").read_text(encoding="utf-8")
+assert "sum(marks)" in weighted_sql
+assert "jsonb_object_keys" in weighted_sql
+assert "grant update(marks)" in (root / "supabase/veritashub_question_marks_edit_grant.sql").read_text(encoding="utf-8")
