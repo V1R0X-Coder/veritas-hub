@@ -102,3 +102,13 @@ for filename, markers in {
 summary_sql = (root / "supabase/veritashub_override_aware_results.sql").read_text(encoding="utf-8")
 for marker in ("left join lateral", "revised_score", "created_at desc", "veritashub_lecturer_classes", "revoke all on function"):
     assert marker in summary_sql, f"Missing corrected score summary guard: {marker}"
+
+# Verified campus directory must not publish fabricated seed coordinates.
+registry = (root / "supabase/veritashub_verified_campus_locations.sql").read_text(encoding="utf-8")
+for marker in ("enable row level security", "published = true", "verification_source", "verified_by", "revoke all"):
+    assert marker in registry, f"Missing verified-location safeguard: {marker}"
+assert "insert into public.veritashub_verified_campus_locations" not in registry.lower()
+location_ui = (root / "verified-campus-locations.js").read_text(encoding="utf-8")
+assert "published=eq.true" in location_ui
+assert "textContent = place.name" in location_ui
+assert "verified-campus-locations.js" in (root / "index.html").read_text(encoding="utf-8")
