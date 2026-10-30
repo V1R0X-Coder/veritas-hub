@@ -345,7 +345,7 @@
     link.remove();
     setTimeout(() => window.URL.revokeObjectURL(objectUrl), 60000);
   }
-  function renderAcademicFiles(target, rows) {
+  function renderAcademicFiles(target, rows, lecturer = false) {
     const container = el(target);
     container.replaceChildren();
     for (const row of rows) {
@@ -368,7 +368,50 @@
         finally { button.disabled = false; }
       });
       card.append(info, button);
+      if (lecturer && row.id) {
+        const replace = document.createElement('button');
+        replace.type = 'button';
+        replace.className = 'chip';
+        replace.textContent = 'Replace version';
+        replace.addEventListener('click', () => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = '.pdf,.doc,.docx,.ppt,.pptx';
+          input.addEventListener('change', async () => {
+            const file = input.files && input.files[0];
+            if (!file) return;
+            replace.disabled = true;
+            try { await replaceAcademicFile(row, file); await window.academicLoadLecturerFiles(); }
+            catch (err) { window.alert(err.message || 'Unable to replace file.'); }
+            finally { replace.disabled = false; }
+          }, {once:true});
+          input.click();
+        });
+        card.append(replace);
+      }
       container.append(card);
+    }
+  }
+  async function replaceAcademicFile(row, file) {
+    const token = await accessToken();
+    const user = await request('/auth/v1/user', undefined, 'GET', token);
+    if (!file.size || file.size > 10485760) throw new Error('Maximum document size is 10 MB.');
+    const extension = (file.name.split('.').pop() || '').toLowerCase();
+    const mime = FILE_EXTENSIONS[extension];
+    if (!mime || (file.type && file.type !== mime)) throw new Error('Unsupported document type.');
+    if (!window.confirm('Publish a new version of this document? Previous versions will be retained.')) return;
+    const pathParts = row.storage_path.split('/');
+    if (pathParts.length !== 3 || pathParts[1] !== user.id) throw new Error('You cannot replace this file.');
+    const path = pathParts[0] + '/' + user.id + '/' + crypto.randomUUID() + '.' + extension;
+    await storageRequest(path, token, 'POST', file, mime);
+    try {
+      await request('/rest/v1/rpc/veritashub_record_file_version', {
+        p_file_id:row.id,p_storage_path:path,p_file_name:file.name.slice(0,200),
+        p_mime_type:mime,p_file_size:file.size
+      }, 'POST', token);
+    } catch (error) {
+      try { await storageRequest(path, token, 'DELETE'); } catch (_) {}
+      throw error;
     }
   }
   window.academicLoadStudentFiles = async () => {
@@ -412,9 +455,9 @@
       if (classes.some(c => c.id === previous)) selector.value = previous;
       const files = await request('/rest/v1/veritashub_class_files?lecturer_id=eq.' +
         encodeURIComponent(user.id) +
-        '&select=title,file_name,storage_path,file_size,published&order=created_at.desc',
+        '&select=id,title,file_name,storage_path,file_size,published&order=created_at.desc',
         undefined, 'GET', token);
-      renderAcademicFiles('lecturerFilesList', files || []);
+      renderAcademicFiles('lecturerFilesList', files || [], true);
       status.textContent = files.length + ' document(s) found; ' + classes.length + ' assigned published class(es).';
     } catch (err) { status.textContent = err.message || 'Unable to load documents.'; }
   };
