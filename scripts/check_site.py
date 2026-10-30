@@ -138,3 +138,11 @@ for marker in ("reviewed_by", "approved_location_id", "enable row level security
 assert "grant select" not in review_sql.lower()
 assert "grant update" not in review_sql.lower()
 assert (root / "docs/campus-location-review.md").exists()
+
+# Reviewer-only RPCs must check a trusted reviewer table and never publish pins.
+review_rpc = (root / "supabase/veritashub_campus_review_rpc.sql").read_text(encoding="utf-8")
+for marker in ("veritashub_campus_reviewers", "auth.uid()", "for update", "published)", "now(),false", "security definer"):
+    assert marker in review_rpc, f"Missing review RPC safeguard: {marker}"
+assert "grant insert on public.veritashub_campus_reviewers" not in review_rpc.lower()
+assert "grant update on public.veritashub_verified_campus_locations" not in review_rpc.lower()
+assert "campus-reviewer.js" in (root / "index.html").read_text(encoding="utf-8")
