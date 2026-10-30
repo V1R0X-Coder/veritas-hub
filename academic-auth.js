@@ -457,6 +457,61 @@
       status.textContent = 'Document uploaded successfully. ' + status.textContent;
     } catch (err) { status.textContent = err.message || 'Unable to upload document.'; }
   };
+  window.academicLoadQuizClasses = async () => {
+    const status = el('quizDraftStatus');
+    try {
+      const token = await accessToken();
+      const user = await request('/auth/v1/user', undefined, 'GET', token);
+      const classes = await verifiedTeachingClasses(token, user.id);
+      const select = el('quizDraftClass');
+      select.replaceChildren();
+      const empty = document.createElement('option');
+      empty.value = ''; empty.textContent = 'Choose an assigned class';
+      select.append(empty);
+      for (const cls of classes) {
+        const option = document.createElement('option');
+        option.value = cls.id;
+        option.textContent = cls.subject_code + ' · ' + cls.title;
+        select.append(option);
+      }
+      status.textContent = classes.length + ' published class(es) available for draft quizzes.';
+    } catch (err) { status.textContent = err.message || 'Unable to load assigned classes.'; }
+  };
+  window.academicCreateQuizDraft = async () => {
+    const status = el('quizDraftStatus');
+    try {
+      const token = await accessToken();
+      const user = await request('/auth/v1/user', undefined, 'GET', token);
+      const classes = await verifiedTeachingClasses(token, user.id);
+      const classId = el('quizDraftClass').value;
+      const title = el('quizDraftTitle').value.trim();
+      const prompt = el('quizDraftPrompt').value.trim();
+      const options = el('quizDraftOptions').value.split(/\\r?\\n/).map(x => x.trim());
+      const correct = Number(el('quizDraftCorrect').value);
+      if (!classes.some(x => x.id === classId)) throw new Error('Select an assigned class.');
+      if (title.length < 3 || title.length > 160 || prompt.length < 3 || prompt.length > 2000 ||
+          options.length !== 4 || options.some(x => !x || x.length > 500) ||
+          !Number.isInteger(correct) || correct < 0 || correct > 3)
+        throw new Error('Enter a title, question, exactly four nonempty answers, and the correct choice.');
+      status.textContent = 'Saving private draft…';
+      const response = await fetch(URL + '/rest/v1/veritashub_quizzes?select=id', {
+        method:'POST', headers:{apikey:KEY,Authorization:'Bearer ' + token,
+          'Content-Type':'application/json',Prefer:'return=representation'},
+        body:JSON.stringify({class_id:classId,lecturer_id:user.id,title,published:false})
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.message || 'Could not create draft.');
+      const id = payload[0] && payload[0].id;
+      if (!id) throw new Error('Draft created but no identifier returned. Contact support.');
+      await request('/rest/v1/veritashub_quiz_questions', {
+        quiz_id:id,prompt,options,correct_index:correct,position:0
+      }, 'POST', token);
+      el('quizDraftTitle').value = '';
+      el('quizDraftPrompt').value = '';
+      el('quizDraftOptions').value = '';
+      status.textContent = 'Private quiz draft saved. Student publishing and grading are coming in the next release.';
+    } catch (err) { status.textContent = err.message || 'Unable to save quiz draft.'; }
+  };
   document.addEventListener('DOMContentLoaded', () => {
     if (session()) status('Previous academic session found. Sign in again if it has expired.');
   });
