@@ -53,4 +53,23 @@ if 'academicUploadClassFile()' in source:
                      'window.academicLoadLecturerFiles', "FILE_BUCKET = 'veritashub-class-files'"):
         assert required in script, f"Missing academic document handler: {required}"
     assert (root / "supabase/veritashub_private_class_files.sql").is_file(), "Missing document storage migration"
+# Protect key assessment interactions against accidental removal during refactors.
+if external.is_file():
+    assessment = external.read_text(encoding="utf-8")
+    required_assessment = (
+        "window.academicPreviewDraftQuiz",
+        "window.academicLoadLecturerQuizzes",
+        "window.academicAddDraftQuestion",
+        "window.academicTakeQuiz",
+        "window.academicLoadStudentResults",
+        "veritashub_submit_quiz",
+        "veritashub_publish_quiz",
+        "Answered 0 of ",
+        "Submission cancelled. Your selected answers are still here.",
+        "Publishing cancelled. Your quiz remains a draft.",
+        "Basic checks passed: ",
+    )
+    for marker in required_assessment:
+        assert marker in assessment, f"Missing assessment workflow marker: {marker}"
+    assert "'” now?\\\\n\\\\n'" not in assessment, "Publish confirmation contains escaped literal newlines"
 print(f"Static site checks passed: {len(parser.buffers)} inline JavaScript block(s)")

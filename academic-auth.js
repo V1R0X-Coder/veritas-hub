@@ -681,7 +681,7 @@
           button.type = 'button'; button.className = 'btn dark';
           button.textContent = 'Publish';
           button.addEventListener('click', async () => {
-            const warning = 'Publish “' + quiz.title + '” now?\\n\\n' +
+            const warning = 'Publish “' + quiz.title + '” now?\n\n' +
               'Students enrolled in this class will be able to take the test. ' +
               'Check every question and correct answer before continuing. ' +
               'Published quizzes cannot be edited in the current interface.';
