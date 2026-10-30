@@ -368,6 +368,40 @@
         finally { button.disabled = false; }
       });
       card.append(info, button);
+      if (row.id) {
+        const history = document.createElement('button');
+        history.type = 'button';
+        history.className = 'chip';
+        history.textContent = 'Version history';
+        history.addEventListener('click', async () => {
+          history.disabled = true;
+          try {
+            const token = await accessToken();
+            const versions = await request('/rest/v1/veritashub_class_file_versions?file_id=eq.' +
+              encodeURIComponent(row.id) +
+              '&select=version_number,file_name,storage_path,file_size,created_at&order=version_number.desc',
+              undefined, 'GET', token);
+            const panel = document.createElement('div');
+            panel.className = 'list-item';
+            if (!versions.length) panel.textContent = 'Original document: no replacements recorded.';
+            for (const version of versions) {
+              const download = document.createElement('button');
+              download.type = 'button';
+              download.className = 'chip';
+              download.textContent = 'Download v' + version.version_number + ' · ' + version.file_name;
+              download.addEventListener('click', () => downloadAcademicFile(version)
+                .catch(err => window.alert(err.message || 'Download failed.')));
+              panel.append(download);
+            }
+            const previous = card.querySelector('[data-version-history]');
+            if (previous) previous.remove();
+            panel.dataset.versionHistory = 'true';
+            card.append(panel);
+          } catch (err) { window.alert(err.message || 'Unable to load history.'); }
+          finally { history.disabled = false; }
+        });
+        card.append(history);
+      }
       if (lecturer && row.id) {
         const replace = document.createElement('button');
         replace.type = 'button';
