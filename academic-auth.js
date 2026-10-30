@@ -874,7 +874,8 @@
         }
         list.append(row);
       }
-      status.textContent = (quizzes || []).length + ' available test(s).';
+      status.textContent = (quizzes || []).length ? (quizzes || []).length + ' available test(s).' :
+        'No published tests for your enrolled classes yet. Check again after your lecturer publishes an assessment.';
     } catch (err) { status.textContent = err.message || 'Unable to load tests.'; }
   };
   window.academicTakeQuiz = async (quizId, title) => {
