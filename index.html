@@ -78,6 +78,13 @@ body{font-family:Arial,Helvetica,sans-serif;letter-spacing:0}
 #nav button:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
 #nav .nav-group:has(.active)>.nav-group-toggle{background:#ffffff16;color:#fff}
 @media(max-width:700px){#nav .nav-group-toggle,#nav .nav-submenu button{min-height:46px}}
+@media(max-width:800px){
+ #sidebar.open{z-index:101}
+ #mobileMenuButton:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+}
+@media(prefers-reduced-motion:reduce){
+ #nav .nav-chevron{transition:none}
+}
 /* Theme palettes are deliberately last so every theme overrides the refined campus styles. */
 :root[data-theme="forest"]{--green:#174d3b;--green2:#2c6b52;--lime:#dce8c7;--cream:#f5f5f0;--paper:#ffffff;--ink:#202a24;--muted:#6e786f;--line:#e1e5dd;--shadow:0 8px 24px #152b1d0b}
 :root[data-theme="ocean"]{--green:#163d63;--green2:#276a9a;--lime:#bde8ff;--cream:#f1f6fa;--paper:#ffffff;--ink:#1d2c39;--muted:#667989;--line:#dbe5ed;--shadow:0 8px 24px #163d6315}
@@ -96,9 +103,9 @@ body{font-family:Arial,Helvetica,sans-serif;letter-spacing:0}
 </style>
 </head>
 <body>
-<div class="mobile-overlay" id="overlay" onclick="toggleMenu(false)"></div>
+<div class="mobile-overlay" id="overlay" aria-hidden="true" onclick="toggleMenu(false)"></div>
 <div class="layout">
-<aside class="sidebar" id="sidebar">
+<aside class="sidebar" id="sidebar" aria-label="Main navigation">
   <a class="brand" href="#home" aria-label="Veritas Hub home" onclick="showPage('home');return false"><span class="brand-mark">V</span><span><strong>Veritas Hub</strong><small>CAMPUS LIFE · INDEPENDENT PROJECT</small></span></a>
   <div><p class="navlabel">CAMPUS MENU</p><nav class="nav" id="nav">
 <button type="button" class="active" data-page="home"><span class="ico">⌂</span>Home dashboard</button>
@@ -134,7 +141,7 @@ body{font-family:Arial,Helvetica,sans-serif;letter-spacing:0}
   <div class="side-note"><b>Built for students, by students.</b>This is an independent student project concept, not an official university service.</div>
 </aside>
 <main class="main">
-<header class="topbar"><button class="iconbtn menu-btn" onclick="toggleMenu(true)" aria-label="Open menu">☰</button><div class="mobile-brand"><span class="brand-mark">V</span> Veritas Hub</div><div class="crumb">Student life / <strong id="crumbName">Dashboard</strong></div><div class="top-actions"><button class="iconbtn" onclick="notify('You’re all caught up!')" aria-label="Notifications">♧</button><div class="avatar" id="avatar">V</div></div></header>
+<header class="topbar"><button class="iconbtn menu-btn" id="mobileMenuButton" onclick="toggleMenu(true)" aria-label="Open menu" aria-controls="sidebar" aria-expanded="false">☰</button><div class="mobile-brand"><span class="brand-mark">V</span> Veritas Hub</div><div class="crumb">Student life / <strong id="crumbName">Dashboard</strong></div><div class="top-actions"><button class="iconbtn" onclick="notify('You’re all caught up!')" aria-label="Notifications">♧</button><div class="avatar" id="avatar">V</div></div></header>
 
 <section class="page active" id="page-home">
 <div class="hero">
@@ -403,7 +410,31 @@ function showPage(name){
 }
 document.querySelectorAll('#nav [data-page]').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
 document.querySelector('#nav [data-page="home"]')?.setAttribute('aria-current','page');
-function toggleMenu(open){document.getElementById('sidebar').classList.toggle('open',open);document.getElementById('overlay').classList.toggle('show',open);}
+function toggleMenu(open){
+ const sidebar=document.getElementById('sidebar');
+ const overlay=document.getElementById('overlay');
+ const trigger=document.getElementById('mobileMenuButton');
+ const mobile=window.matchMedia('(max-width: 800px)').matches;
+ const visible=Boolean(open&&mobile);
+ sidebar.classList.toggle('open',visible);
+ overlay.classList.toggle('show',visible);
+ trigger.setAttribute('aria-expanded',String(visible));
+ trigger.setAttribute('aria-label',visible?'Close menu':'Open menu');
+ if(visible){
+   const first=sidebar.querySelector('#nav [data-page="home"]');
+   first?.focus({preventScroll:true});
+ }else if(open===false&&mobile&&sidebar.contains(document.activeElement)){
+   trigger.focus({preventScroll:true});
+ }
+}
+document.addEventListener('keydown',event=>{
+ if(event.key==='Escape'&&document.getElementById('sidebar').classList.contains('open')){
+   event.preventDefault();
+   toggleMenu(false);
+   document.getElementById('mobileMenuButton').focus({preventScroll:true});
+ }
+});
+window.matchMedia('(max-width: 800px)').addEventListener('change',()=>toggleMenu(false));
 let toastTimer;function notify(message){const t=document.getElementById('toast');t.textContent=message;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2800);}
 function getData(key){try{return JSON.parse(localStorage.getItem('veritas-'+key)||'[]')}catch(e){return []}}
 function setData(key,val){try{localStorage.setItem('veritas-'+key,JSON.stringify(val));return true}catch(e){notify('Could not save here. Try opening this file in a browser or Live Server.');return false}}
