@@ -477,6 +477,24 @@
       status.textContent = classes.length + ' published class(es) available for draft quizzes.';
     } catch (err) { status.textContent = err.message || 'Unable to load assigned classes.'; }
   };
+  window.academicScheduleAnswerKeyRelease = async (quizId) => {
+    const raw = window.prompt('Answer key release date/time (YYYY-MM-DD HH:MM), or blank to keep private:', '');
+    if (raw === null) return;
+    const when = raw.trim() ? new Date(raw.trim().replace(' ', 'T')) : null;
+    if (when && (!Number.isFinite(when.getTime()) || when.getTime() <= Date.now())) {
+      window.alert('Choose a valid future release time.'); return;
+    }
+    try {
+      const token = await accessToken();
+      const user = await request('/auth/v1/user', undefined, 'GET', token);
+      await verifiedTeachingClasses(token, user.id);
+      const updated = await request('/rest/v1/veritashub_quizzes?id=eq.' +
+        encodeURIComponent(quizId) + '&lecturer_id=eq.' + encodeURIComponent(user.id) +
+        '&select=id', {answer_key_release_at:when ? when.toISOString() : null}, 'PATCH', token);
+      if (!Array.isArray(updated) || updated.length !== 1) throw new Error('Not authorized to update this quiz.');
+      window.alert(when ? 'Answer key release scheduled.' : 'Answer key remains private.');
+    } catch (err) { window.alert(err.message || 'Could not schedule answer key release.'); }
+  };
   window.academicCreateQuizDraft = async () => {
     const status = el('quizDraftStatus');
     try {
