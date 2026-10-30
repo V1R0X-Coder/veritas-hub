@@ -5,6 +5,43 @@
   const KEY = 'sb_publishable_3-xb2zcXFzqfSiTKqip7Lw_6KF9qiI_';
   let approved = [];
   const el = id => document.getElementById(id);
+  let map = null;
+  let pinLayer = null;
+  function renderPinMap(matches) {
+    const host = el('verifiedCampusPinMap');
+    if (!host) return;
+    if (!matches.length) {
+      if (map) { map.remove(); map = null; pinLayer = null; }
+      host.replaceChildren();
+      return;
+    }
+    if (!window.L) {
+      host.textContent = 'Map tiles are unavailable. Verified locations remain accessible in the list below.';
+      return;
+    }
+    if (!map) {
+      map = window.L.map(host, {scrollWheelZoom:false});
+      window.L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution:'&copy; OpenStreetMap contributors', maxZoom:19
+      }).addTo(map);
+      pinLayer = window.L.layerGroup().addTo(map);
+    }
+    pinLayer.clearLayers();
+    const bounds = [];
+    for (const place of matches) {
+      const lat = Number(place.latitude), lng = Number(place.longitude);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng) ||
+          Math.abs(lat)>90 || Math.abs(lng)>180) continue;
+      const marker = window.L.marker([lat,lng], {title:place.name,alt:'Verified location: '+place.name});
+      const label = document.createElement('span');
+      label.textContent = place.name;
+      marker.bindPopup(label);
+      marker.addTo(pinLayer);
+      bounds.push([lat,lng]);
+    }
+    if (bounds.length) map.fitBounds(bounds, {padding:[32,32],maxZoom:17});
+    setTimeout(() => map && map.invalidateSize(), 0);
+  }
   window.renderVerifiedCampusLocations = () => {
     const list = el('verifiedCampusLocationsList');
     if (!list) return;
@@ -36,6 +73,7 @@
       card.append(link);
       list.append(card);
     }
+    renderPinMap(matches);
     const status = el('verifiedCampusLocationsStatus');
     if (status) status.textContent = matches.length
       ? matches.length + ' verified location(s) shown.'
