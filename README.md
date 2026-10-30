@@ -120,6 +120,7 @@ If the SQL has not been run yet, the website will show that the shared counter i
 - [x] Searchable suggested campus place directory with category filters — [#13](https://github.com/V1R0X-Coder/veritas-hub/pull/13); categories are provisional and browser verification remains outstanding
 - [ ] Interactive map with approved location pins, accessible labels and on-map filtering
 - [ ] Validated walking paths, step-by-step campus navigation and distance estimates
+- [x] Responsive campus map layout with phone-sized single-column view, 44px touch targets and readable directory cards — [#14](https://github.com/V1R0X-Coder/veritas-hub/pull/14); real-device smoke testing outstanding
 - [ ] Low-bandwidth/mobile performance, offline fallback and location privacy review
 - [ ] Campus map usability testing on Android and desktop; validate every route before labeling it official
 
