@@ -535,6 +535,13 @@
         const title = document.createElement('strong');
         title.textContent = quiz.title + (quiz.published ? ' (published)' : ' (draft)');
         row.append(title);
+        if (quiz.published) {
+          const results = document.createElement('button');
+          results.type = 'button'; results.className = 'btn light';
+          results.textContent = 'View results';
+          results.addEventListener('click', () => window.academicViewQuizResults(quiz.id));
+          row.append(results);
+        }
         if (!quiz.published) {
           const button = document.createElement('button');
           button.type = 'button'; button.className = 'btn dark';
@@ -552,6 +559,25 @@
       }
       status.textContent = (quizzes || []).length + ' quiz(es) found.';
     } catch (err) { status.textContent = err.message || 'Unable to load quizzes.'; }
+  };
+  window.academicViewQuizResults = async (quizId) => {
+    const status = el('lecturerQuizStatus');
+    try {
+      status.textContent = 'Loading private result summary…';
+      const token = await accessToken();
+      const result = await request('/rest/v1/rpc/veritashub_lecturer_quiz_results',
+        {p_quiz:quizId}, 'POST', token);
+      const container = el('lecturerQuizResults');
+      container.replaceChildren();
+      const heading = document.createElement('h4');
+      heading.textContent = result.title;
+      const summary = document.createElement('p');
+      summary.textContent = 'Submissions: ' + result.submissions +
+        ' · Average: ' + (result.average_percent === null ? '—' : result.average_percent + '%') +
+        ' · Highest: ' + (result.highest_percent === null ? '—' : result.highest_percent + '%');
+      container.append(heading, summary);
+      status.textContent = 'Result summary loaded.';
+    } catch (err) { status.textContent = err.message || 'Unable to load results.'; }
   };
   window.academicLoadStudentQuizzes = async () => {
     const status = el('studentQuizStatus');
