@@ -581,6 +581,38 @@
       const note = document.createElement('p');
       note.textContent = 'Lecturer-only preview. Correct answers shown here are not visible to students.';
       container.append(heading, note);
+      const issues = [];
+      for (const [index, question] of (Array.isArray(questions) ? questions : []).entries()) {
+        const options = Array.isArray(question.options) ? question.options : [];
+        if (options.length !== 4 || options.some(option => typeof option !== 'string' || !option.trim())) {
+          issues.push('Question ' + (index + 1) + ': all four answer options must be filled.');
+        }
+        if (!Number.isInteger(question.correct_index) || question.correct_index < 0 || question.correct_index >= options.length) {
+          issues.push('Question ' + (index + 1) + ': select a valid correct answer.');
+        }
+        if (new Set(options.map(option => String(option).trim().toLocaleLowerCase())).size !== options.length) {
+          issues.push('Question ' + (index + 1) + ': duplicate answer options detected.');
+        }
+      }
+      const quality = document.createElement('div');
+      quality.setAttribute('role', 'status');
+      quality.style.marginBottom = '12px';
+      const qualityHeading = document.createElement('strong');
+      qualityHeading.textContent = !questions.length ? 'No questions yet' :
+        issues.length ? 'Review needed: ' + issues.length + ' issue(s)' :
+        'Basic checks passed: ' + questions.length + ' question(s)';
+      quality.append(qualityHeading);
+      for (const issue of issues) {
+        const message = document.createElement('p');
+        message.textContent = '⚠ ' + issue;
+        quality.append(message);
+      }
+      if (!issues.length && questions.length) {
+        const message = document.createElement('p');
+        message.textContent = 'Check question wording and factual accuracy before publishing.';
+        quality.append(message);
+      }
+      container.append(quality);
       if (!Array.isArray(questions) || !questions.length) {
         const empty = document.createElement('p');
         empty.textContent = 'No questions found. Add questions before publishing.';
@@ -601,7 +633,8 @@
           container.append(block);
         }
       }
-      status.textContent = 'Preview loaded: ' + (questions || []).length + ' question(s). Review before publishing.';
+      status.textContent = 'Preview loaded: ' + (questions || []).length +
+        ' question(s), ' + issues.length + ' basic quality issue(s).';
       container.scrollIntoView({behavior:'smooth',block:'nearest'});
     } catch (err) {
       status.textContent = err.message || 'Unable to preview this draft.';
