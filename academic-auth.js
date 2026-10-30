@@ -579,6 +579,50 @@
       status.textContent = 'Result summary loaded.';
     } catch (err) { status.textContent = err.message || 'Unable to load results.'; }
   };
+  window.academicLoadStudentResults = async () => {
+    const status = el('studentResultStatus');
+    const summary = el('studentResultSummary');
+    const list = el('studentResultList');
+    summary.replaceChildren();
+    list.replaceChildren();
+    status.textContent = 'Loading your private assessment results…';
+    try {
+      const token = await accessToken();
+      const [attempts, quizzes] = await Promise.all([
+        request('/rest/v1/veritashub_quiz_attempts?select=quiz_id,score,total,submitted_at&order=submitted_at.desc',
+          undefined, 'GET', token),
+        request('/rest/v1/veritashub_quizzes?published=eq.true&select=id,title',
+          undefined, 'GET', token)
+      ]);
+      const names = new Map((quizzes || []).map(q => [q.id, q.title]));
+      const records = (attempts || []).filter(a => Number(a.total) > 0);
+      if (!records.length) {
+        status.textContent = 'No completed tests yet.';
+        return;
+      }
+      const percentages = records.map(a => 100 * Number(a.score) / Number(a.total));
+      const mean = percentages.reduce((sum, value) => sum + value, 0) / percentages.length;
+      const overview = document.createElement('p');
+      overview.textContent = 'Completed tests: ' + records.length + ' · Average score: ' + mean.toFixed(1) + '%';
+      summary.append(overview);
+      for (const attempt of records) {
+        const row = document.createElement('div');
+        row.className = 'list-item';
+        const label = document.createElement('strong');
+        label.textContent = names.get(attempt.quiz_id) || 'Completed assessment';
+        const score = document.createElement('p');
+        const percent = 100 * Number(attempt.score) / Number(attempt.total);
+        const submitted = attempt.submitted_at ? new Date(attempt.submitted_at) : null;
+        score.textContent = attempt.score + '/' + attempt.total + ' (' + percent.toFixed(1) + '%)' +
+          (submitted && !Number.isNaN(submitted.getTime()) ? ' · Submitted ' + submitted.toLocaleString() : '');
+        row.append(label, score);
+        list.append(row);
+      }
+      status.textContent = 'Showing your completed assessments only.';
+    } catch (err) {
+      status.textContent = err.message || 'Unable to load your results.';
+    }
+  };
   window.academicLoadStudentQuizzes = async () => {
     const status = el('studentQuizStatus');
     const list = el('studentQuizList');
@@ -665,6 +709,7 @@
           container.replaceChildren();
           status.textContent = 'Test submitted. Your score: ' + result.score + '/' + result.total;
           await window.academicLoadStudentQuizzes();
+          await window.academicLoadStudentResults().catch(() => {});
           status.textContent = 'Test submitted. Your score: ' + result.score + '/' + result.total;
         } catch (err) { status.textContent = err.message || 'Submission failed.'; submit.disabled = false; }
       });

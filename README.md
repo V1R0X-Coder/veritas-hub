@@ -110,7 +110,8 @@ If the SQL has not been run yet, the website will show that the shared counter i
 - [x] Optional submission deadline with server-side enforcement — [#10](https://github.com/V1R0X-Coder/veritas-hub/pull/10) (pending release verification)
 - [ ] Multi-question editing, marks per question, quiz preview and configurable late-submission rules
 - [x] Lecturer-only aggregate quiz results (submissions, average and highest percentages) — [#11](https://github.com/V1R0X-Coder/veritas-hub/pull/11); authenticated browser verification outstanding
-- [ ] Individual student score dashboards, controlled overrides and answer-key release controls
+- [x] Private student score history and average percentage dashboard (existing own-attempt RLS) — [#18](https://github.com/V1R0X-Coder/veritas-hub/pull/18); authenticated browser verification outstanding
+- [ ] Controlled score overrides and answer-key release controls
 - [ ] Authenticated end-to-end tests of publishing, taking, scoring and authorization boundaries
 
 ### Campus maps and navigation — parallel workstream
