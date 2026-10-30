@@ -490,6 +490,11 @@
       const correct = Number(el('quizDraftCorrect').value);
       const deadlineInput = el('quizDraftDeadline').value;
       const deadlineDate = deadlineInput ? new Date(deadlineInput) : null;
+      const graceInput = window.prompt('Late submission grace period in minutes (0–10080):', '0');
+      if (graceInput === null) return;
+      if (!/^(?:0|[1-9][0-9]{0,4})$/.test(graceInput.trim()) || Number(graceInput) > 10080)
+        throw new Error('Grace period must be a whole number from 0 to 10080 minutes.');
+      const graceMinutes = Number(graceInput.trim());
       if (deadlineDate && (!Number.isFinite(deadlineDate.getTime()) ||
           deadlineDate.getTime() <= Date.now() + 60000))
         throw new Error('The submission deadline must be in the future.');
@@ -504,7 +509,7 @@
       const response = await fetch(URL + '/rest/v1/veritashub_quizzes?select=id', {
         method:'POST', headers:{apikey:KEY,Authorization:'Bearer ' + token,
           'Content-Type':'application/json',Prefer:'return=representation'},
-        body:JSON.stringify({class_id:classId,lecturer_id:user.id,title,published:false,deadline_at:deadlineDate ? deadlineDate.toISOString() : null})
+        body:JSON.stringify({class_id:classId,lecturer_id:user.id,title,published:false,deadline_at:deadlineDate ? deadlineDate.toISOString() : null,late_grace_minutes:graceMinutes})
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.message || 'Could not create draft.');
@@ -849,7 +854,7 @@
     el('studentQuizQuestions').replaceChildren();
     try {
       const token = await accessToken();
-      const quizzes = await request('/rest/v1/veritashub_quizzes?published=eq.true&select=id,title,deadline_at&order=created_at.desc',
+      const quizzes = await request('/rest/v1/veritashub_quizzes?published=eq.true&select=id,title,deadline_at,late_grace_minutes&order=created_at.desc',
         undefined, 'GET', token);
       const results = await request('/rest/v1/veritashub_quiz_attempts?select=quiz_id,score,total',
         undefined, 'GET', token);
@@ -858,7 +863,7 @@
         const row = document.createElement('div');
         row.className = 'list-item';
         const title = document.createElement('strong');
-        title.textContent = quiz.title + (quiz.deadline_at ? ' · Deadline: ' + new Date(quiz.deadline_at).toLocaleString() : ' · No deadline');
+        title.textContent = quiz.title + (quiz.deadline_at ? ' · Deadline: ' + new Date(quiz.deadline_at).toLocaleString() + (quiz.late_grace_minutes ? ' · Grace: ' + quiz.late_grace_minutes + ' min' : '') : ' · No deadline');
         if (quiz.deadline_at) {
           const remaining = new Date(quiz.deadline_at).getTime() - Date.now();
           if (remaining > 0 && remaining <= 24 * 60 * 60 * 1000) {
@@ -877,7 +882,7 @@
           const button = document.createElement('button');
           button.type = 'button'; button.className = 'btn dark';
           button.textContent = 'Take test';
-          if (quiz.deadline_at && new Date(quiz.deadline_at).getTime() <= Date.now()) {
+          if (quiz.deadline_at && new Date(quiz.deadline_at).getTime() + (quiz.late_grace_minutes || 0) * 60000 <= Date.now()) {
             button.disabled = true;
             button.textContent = 'Deadline passed';
           }
