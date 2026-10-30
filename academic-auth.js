@@ -488,10 +488,8 @@
       const token = await accessToken();
       const user = await request('/auth/v1/user', undefined, 'GET', token);
       await verifiedTeachingClasses(token, user.id);
-      const updated = await request('/rest/v1/veritashub_quizzes?id=eq.' +
-        encodeURIComponent(quizId) + '&lecturer_id=eq.' + encodeURIComponent(user.id) +
-        '&select=id', {answer_key_release_at:when ? when.toISOString() : null}, 'PATCH', token);
-      if (!Array.isArray(updated) || updated.length !== 1) throw new Error('Not authorized to update this quiz.');
+      await request('/rest/v1/rpc/veritashub_schedule_answer_key_release',
+        {p_quiz:quizId,p_release_at:when ? when.toISOString() : null}, 'POST', token);
       window.alert(when ? 'Answer key release scheduled.' : 'Answer key remains private.');
     } catch (err) { window.alert(err.message || 'Could not schedule answer key release.'); }
   };
