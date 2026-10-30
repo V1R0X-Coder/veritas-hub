@@ -101,7 +101,7 @@ If the SQL has not been run yet, the website will show that the shared counter i
 ### Class materials — requirements 32–38
 - [x] Class-scoped written teaching notes with publishing controls — [#6](https://github.com/V1R0X-Coder/veritas-hub/pull/6)
 - [x] Private PDF, Word, PowerPoint uploads/downloads and enrollment-based RLS — [#7](https://github.com/V1R0X-Coder/veritas-hub/pull/7)
-- [ ] Material version history and controlled replacement — implementation in draft PR [#38](https://github.com/V1R0X-Coder/veritas-hub/pull/38); staging migration, security review, CI and authenticated browser verification pending
+- [x] Material version history and controlled replacement — merged [#38](https://github.com/V1R0X-Coder/veritas-hub/pull/38), static CI passed and scoped migrations applied; authenticated lecturer/student browser smoke tests remain pending
 - [ ] File malware screening and live student/lecturer upload/download smoke tests
 
 ### Assessments — requirements 39–56
