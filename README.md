@@ -145,6 +145,7 @@ If the SQL has not been run yet, the website will show that the shared counter i
 
 ### Quality, safety and release
 - [x] Scoped branches, PRs and CI checks — [#1](https://github.com/V1R0X-Coder/veritas-hub/pull/1)
+- [x] CI regression checks for assessment handler presence, submission confirmations and publish prompt formatting — [#26](https://github.com/V1R0X-Coder/veritas-hub/pull/26); static checks only
 - [ ] CI integration tests for authenticated Supabase workflows
 - [ ] Verify GitHub Pages deployment and mobile/desktop smoke tests after each release
 - [ ] Production backup/rollback drills, accessibility and performance checks
