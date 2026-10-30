@@ -126,6 +126,8 @@ If the SQL has not been run yet, the website will show that the shared counter i
 
 - [x] Student assessment dashboard shows best percentage — [#30](https://github.com/V1R0X-Coder/veritas-hub/pull/30); browser verification pending
 
+- [x] Student assessment summary shows latest completed score — [#31](https://github.com/V1R0X-Coder/veritas-hub/pull/31); browser verification pending
+
 ### Campus maps and navigation — parallel workstream
 - [x] Campus place directory, map-search links, satellite reference and opt-in device GPS — existing prototype; coordinates and internal routes unverified
 - [x] Switch between satellite and street map references and open external walking directions — [#12](https://github.com/V1R0X-Coder/veritas-hub/pull/12); mobile browser smoke test outstanding
