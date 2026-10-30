@@ -846,6 +846,14 @@
         row.className = 'list-item';
         const title = document.createElement('strong');
         title.textContent = quiz.title + (quiz.deadline_at ? ' · Deadline: ' + new Date(quiz.deadline_at).toLocaleString() : ' · No deadline');
+        if (quiz.deadline_at) {
+          const remaining = new Date(quiz.deadline_at).getTime() - Date.now();
+          if (remaining > 0 && remaining <= 24 * 60 * 60 * 1000) {
+            const notice = document.createElement('p');
+            notice.textContent = 'Deadline approaching: less than 24 hours remaining.';
+            row.append(notice);
+          }
+        }
         row.append(title);
         if (completed.has(quiz.id)) {
           const result = document.createElement('span');
