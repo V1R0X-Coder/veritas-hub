@@ -130,3 +130,11 @@ intake_js = (root / "campus-verification.js").read_text(encoding="utf-8")
 assert "veritashub_campus_location_submissions" in intake_js
 assert "veritashub_verified_campus_locations" not in intake_js
 assert "campus-verification.js" in (root / "index.html").read_text(encoding="utf-8")
+
+# Review provenance is recorded server-side and never granted to browser users.
+review_sql = (root / "supabase/veritashub_campus_review_audit.sql").read_text(encoding="utf-8")
+for marker in ("reviewed_by", "approved_location_id", "enable row level security", "revoke all", "unique(submission_id)"):
+    assert marker in review_sql, f"Missing administrative review safeguard: {marker}"
+assert "grant select" not in review_sql.lower()
+assert "grant update" not in review_sql.lower()
+assert (root / "docs/campus-location-review.md").exists()
