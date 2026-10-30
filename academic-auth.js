@@ -761,7 +761,8 @@
         }
         list.append(row);
       }
-      status.textContent = (quizzes || []).length + ' quiz(es) found.';
+      status.textContent = (quizzes || []).length ? (quizzes || []).length + ' quiz(es) found.' :
+        'No quizzes yet. Create a draft test for one of your assigned classes, then add questions before publishing.';
     } catch (err) { status.textContent = err.message || 'Unable to load quizzes.'; }
   };
   window.academicViewQuizResults = async (quizId) => {
