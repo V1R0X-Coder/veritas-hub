@@ -933,6 +933,15 @@
         } catch (err) { status.textContent = err.message || 'Submission failed.'; submit.disabled = false; }
       });
       container.append(submit);
+      const clear = document.createElement('button');
+      clear.type = 'button'; clear.className = 'btn light'; clear.textContent = 'Clear answers';
+      clear.addEventListener('click', () => {
+        if (!window.confirm('Clear all selected answers for this test?')) return;
+        inputs.forEach(item => item.radios.forEach(radio => { radio.checked = false; }));
+        progress.textContent = 'Answered 0 of ' + questions.length + ' questions';
+        status.textContent = 'Answers cleared. You can start again.';
+      });
+      container.append(clear);
       status.textContent = 'Complete every question and submit once.';
     } catch (err) { status.textContent = err.message || 'Unable to open test.'; }
   };
