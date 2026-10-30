@@ -67,6 +67,17 @@ body{font-family:Arial,Helvetica,sans-serif;letter-spacing:0}
 #page-campus .campus-map-preview-bar{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:10px 12px;background:var(--cream);font-size:12px;line-height:1.5}
 #page-campus .campus-map-preview-bar .btn{min-height:44px}
 @media(max-width:560px){#page-campus .campus-map-preview-bar{align-items:stretch;flex-direction:column}#page-campus .campus-map-preview-bar .btn{width:100%}}
+/* Collapsible, accessible sidebar: preserve existing page routes. */
+#nav .nav-group{min-width:0}
+#nav .nav-group-toggle{width:100%;min-height:44px}
+#nav .nav-chevron{margin-left:auto;transition:transform .18s ease}
+#nav .nav-group.expanded .nav-chevron{transform:rotate(180deg)}
+#nav .nav-submenu{padding:3px 0 6px 12px;display:grid;gap:3px;border-left:1px solid #ffffff35;margin-left:19px}
+#nav .nav-submenu[hidden]{display:none}
+#nav .nav-submenu button{width:100%;min-height:44px;font-size:12px;padding:10px 9px}
+#nav button:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
+#nav .nav-group:has(.active)>.nav-group-toggle{background:#ffffff16;color:#fff}
+@media(max-width:700px){#nav .nav-group-toggle,#nav .nav-submenu button{min-height:46px}}
 /* Theme palettes are deliberately last so every theme overrides the refined campus styles. */
 :root[data-theme="forest"]{--green:#174d3b;--green2:#2c6b52;--lime:#dce8c7;--cream:#f5f5f0;--paper:#ffffff;--ink:#202a24;--muted:#6e786f;--line:#e1e5dd;--shadow:0 8px 24px #152b1d0b}
 :root[data-theme="ocean"]{--green:#163d63;--green2:#276a9a;--lime:#bde8ff;--cream:#f1f6fa;--paper:#ffffff;--ink:#1d2c39;--muted:#667989;--line:#dbe5ed;--shadow:0 8px 24px #163d6315}
@@ -90,27 +101,35 @@ body{font-family:Arial,Helvetica,sans-serif;letter-spacing:0}
 <aside class="sidebar" id="sidebar">
   <a class="brand" href="#home" aria-label="Veritas Hub home" onclick="showPage('home');return false"><span class="brand-mark">V</span><span><strong>Veritas Hub</strong><small>CAMPUS LIFE · INDEPENDENT PROJECT</small></span></a>
   <div><p class="navlabel">CAMPUS MENU</p><nav class="nav" id="nav">
-  <button type="button" class="active" data-page="home"><span class="ico">⌂</span>Home dashboard</button>
-  <button type="button" data-page="keke"><span class="ico">🛺</span>Keke transport</button>
-  <button type="button" data-page="food"><span class="ico">🍲</span>Food & water delivery</button>
-  <button type="button" data-page="news"><span class="ico">◉</span>Campus news</button>
-  <button type="button" data-page="timetable"><span class="ico">▦</span>Timetable</button>
-  <button type="button" data-page="classroom"><span class="ico">▶</span>Virtual classroom</button>
-  <button type="button" data-page="forum"><span class="ico">💬</span>Student forum</button>
-  <button type="button" data-page="market"><span class="ico">♧</span>Student marketplace</button>
-  <button type="button" data-page="campus"><span class="ico">⌖</span>Campus guide & GPS</button>
-  <button type="button" data-page="lost"><span class="ico">⌕</span>Lost & found</button>
-  <button type="button" data-page="resources"><span class="ico">▤</span>Study resources</button>
-  <button type="button" data-page="tour"><span class="ico">↗</span>Tour & network</button>
-  <button type="button" data-page="lecturer"><span class="ico">▣</span>Lecturer dashboard</button>
-  <button type="button" data-page="academic"><span class="ico">▤</span>My academic classes</button>
-  <button type="button" data-page="profile"><span class="ico">◌</span>My profile</button>
-  <button type="button" data-page="ai"><span class="ico">🧠</span>AI study lab</button>
-  <button type="button" data-page="notes"><span class="ico">🗒️</span>Sticky notes</button>
-  <button type="button" data-page="settings"><span class="ico">⚙</span>Customize app</button>
-  <button type="button" data-page="inbox"><span class="ico">✉</span>Updates & messages</button>
-  <button type="button" data-page="feedback"><span class="ico">★</span>Rate & report issues</button>
-  <button type="button" onclick="showPage('home');setTimeout(()=>document.getElementById('supportProject').scrollIntoView({behavior:'smooth',block:'center'}),50)"><span class="ico">♡</span>Support the project</button>
+<button type="button" class="active" data-page="home"><span class="ico">⌂</span>Home dashboard</button>
+  <div class="nav-group" data-nav-group="academics"><button type="button" class="nav-group-toggle" aria-expanded="false" aria-controls="nav-group-academics"><span class="ico" aria-hidden="true">▤</span><span>Academics</span><span class="nav-chevron" aria-hidden="true">⌄</span></button><div class="nav-submenu" id="nav-group-academics" hidden>
+    <button type="button" data-page="timetable"><span class="ico">▦</span>Timetable</button>
+    <button type="button" data-page="classroom"><span class="ico">▶</span>Virtual classroom</button>
+    <button type="button" data-page="academic"><span class="ico">▤</span>My academic classes</button>
+    <button type="button" data-page="resources"><span class="ico">▤</span>Study resources</button>
+    <button type="button" data-page="ai"><span class="ico">🧠</span>AI study lab</button>
+    <button type="button" data-page="lecturer"><span class="ico">▣</span>Lecturer dashboard</button>
+  </div></div>
+  <div class="nav-group" data-nav-group="campus-life"><button type="button" class="nav-group-toggle" aria-expanded="false" aria-controls="nav-group-campus-life"><span class="ico" aria-hidden="true">⌖</span><span>Campus life</span><span class="nav-chevron" aria-hidden="true">⌄</span></button><div class="nav-submenu" id="nav-group-campus-life" hidden>
+    <button type="button" data-page="news"><span class="ico">◉</span>Campus news</button>
+    <button type="button" data-page="campus"><span class="ico">⌖</span>Campus guide & GPS</button>
+    <button type="button" data-page="keke"><span class="ico">🛺</span>Keke transport</button>
+    <button type="button" data-page="food"><span class="ico">🍲</span>Food & water delivery</button>
+    <button type="button" data-page="tour"><span class="ico">↗</span>Tour & network</button>
+  </div></div>
+  <div class="nav-group" data-nav-group="community"><button type="button" class="nav-group-toggle" aria-expanded="false" aria-controls="nav-group-community"><span class="ico" aria-hidden="true">♧</span><span>Student community</span><span class="nav-chevron" aria-hidden="true">⌄</span></button><div class="nav-submenu" id="nav-group-community" hidden>
+    <button type="button" data-page="forum"><span class="ico">💬</span>Student forum</button>
+    <button type="button" data-page="market"><span class="ico">♧</span>Student marketplace</button>
+    <button type="button" data-page="lost"><span class="ico">⌕</span>Lost & found</button>
+    <button type="button" data-page="notes"><span class="ico">🗒️</span>Sticky notes</button>
+    <button type="button" data-page="inbox"><span class="ico">✉</span>Updates & messages</button>
+  </div></div>
+  <div class="nav-group" data-nav-group="account"><button type="button" class="nav-group-toggle" aria-expanded="false" aria-controls="nav-group-account"><span class="ico" aria-hidden="true">◌</span><span>My account</span><span class="nav-chevron" aria-hidden="true">⌄</span></button><div class="nav-submenu" id="nav-group-account" hidden>
+    <button type="button" data-page="profile"><span class="ico">◌</span>My profile</button>
+    <button type="button" data-page="settings"><span class="ico">⚙</span>Customize app</button>
+    <button type="button" data-page="feedback"><span class="ico">★</span>Rate & report issues</button>
+  </div></div>
+<button type="button" onclick="showPage('home');setTimeout(()=>document.getElementById('supportProject').scrollIntoView({behavior:'smooth',block:'center'}),50)"><span class="ico">♡</span>Support the project</button>
   </nav></div>
   <div class="side-note"><b>Built for students, by students.</b>This is an independent student project concept, not an official university service.</div>
 </aside>
@@ -353,8 +372,37 @@ body{font-family:Arial,Helvetica,sans-serif;letter-spacing:0}
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <script>
 const pageNames={home:"Dashboard",keke:"Keke transport",food:"Food & water delivery",news:"Campus news",timetable:"Timetable",classroom:"Virtual classroom",forum:"Student forum",market:"Student marketplace",campus:"Campus guide & GPS",lost:"Lost & found",resources:"Study resources",tour:"Tour & network",profile:"My profile",academic:"My academic classes",lecturer:"Lecturer dashboard",settings:"Customize app",ai:"AI study lab",notes:"Sticky notes",inbox:"Updates & messages",feedback:"Rate & report issues",account:"Sign in / roles"};
-function showPage(name){const target=document.getElementById('page-'+name);if(!target){name='home';}document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('active',b.dataset.page===name));document.getElementById('crumbName').textContent=pageNames[name]||'Dashboard';toggleMenu(false);requestAnimationFrame(()=>{window.scrollTo({top:0,left:0,behavior:'auto'});document.documentElement.scrollTop=0;document.body.scrollTop=0;});}
-document.querySelectorAll('#nav button').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
+function setNavGroup(group,open){
+ if(!group)return;
+ const toggle=group.querySelector('.nav-group-toggle');
+ const submenu=group.querySelector('.nav-submenu');
+ if(!toggle||!submenu)return;
+ toggle.setAttribute('aria-expanded',String(open));
+ submenu.hidden=!open;
+ group.classList.toggle('expanded',open);
+}
+document.querySelectorAll('#nav .nav-group-toggle').forEach(toggle=>toggle.addEventListener('click',()=>{
+ const group=toggle.closest('.nav-group');
+ const expand=toggle.getAttribute('aria-expanded')!=='true';
+ document.querySelectorAll('#nav .nav-group').forEach(item=>setNavGroup(item,item===group&&expand));
+}));
+function showPage(name){
+ if(!document.getElementById('page-'+name))name='home';
+ document.querySelectorAll('.page').forEach(p=>p.classList.toggle('active',p.id==='page-'+name));
+ document.querySelectorAll('#nav [data-page]').forEach(button=>{
+   const active=button.dataset.page===name;
+   button.classList.toggle('active',active);
+   if(active)button.setAttribute('aria-current','page');
+   else button.removeAttribute('aria-current');
+ });
+ const parent=document.querySelector('#nav [data-page="'+name+'"]')?.closest('.nav-group');
+ if(parent)document.querySelectorAll('#nav .nav-group').forEach(group=>setNavGroup(group,group===parent));
+ document.getElementById('crumbName').textContent=pageNames[name]||'Dashboard';
+ toggleMenu(false);
+ requestAnimationFrame(()=>{window.scrollTo({top:0,left:0,behavior:'auto'});document.documentElement.scrollTop=0;document.body.scrollTop=0;});
+}
+document.querySelectorAll('#nav [data-page]').forEach(b=>b.addEventListener('click',()=>showPage(b.dataset.page)));
+document.querySelector('#nav [data-page="home"]')?.setAttribute('aria-current','page');
 function toggleMenu(open){document.getElementById('sidebar').classList.toggle('open',open);document.getElementById('overlay').classList.toggle('show',open);}
 let toastTimer;function notify(message){const t=document.getElementById('toast');t.textContent=message;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2800);}
 function getData(key){try{return JSON.parse(localStorage.getItem('veritas-'+key)||'[]')}catch(e){return []}}
