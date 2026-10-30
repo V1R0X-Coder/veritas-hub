@@ -499,6 +499,8 @@
           !Number.isInteger(correct) || correct < 0 || correct > 3)
         throw new Error('Enter a title, question, exactly four nonempty answers, and the correct choice.');
       status.textContent = 'Saving private draft…';
+      const marks = askQuestionMarks();
+      if (marks === null) return;
       const response = await fetch(URL + '/rest/v1/veritashub_quizzes?select=id', {
         method:'POST', headers:{apikey:KEY,Authorization:'Bearer ' + token,
           'Content-Type':'application/json',Prefer:'return=representation'},
@@ -508,8 +510,6 @@
       if (!response.ok) throw new Error(payload.message || 'Could not create draft.');
       const id = payload[0] && payload[0].id;
       if (!id) throw new Error('Draft created but no identifier returned. Contact support.');
-      const marks = askQuestionMarks();
-      if (marks === null) return;
       await request('/rest/v1/veritashub_quiz_questions', {
         quiz_id:id,prompt,options,correct_index:correct,position:0,marks
       }, 'POST', token);
