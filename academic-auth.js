@@ -914,7 +914,8 @@
         inputs.push({id:question.id,radios:group});
         group.forEach(radio => radio.addEventListener('change', () => {
           const answered = inputs.filter(item => item.radios.some(input => input.checked)).length;
-          progress.textContent = 'Answered ' + answered + ' of ' + questions.length + ' questions';
+          progress.textContent = 'Answered ' + answered + ' of ' + questions.length + ' questions (' +
+            Math.round(100 * answered / questions.length) + '% complete)';
         }));
         container.append(fieldset);
       }
