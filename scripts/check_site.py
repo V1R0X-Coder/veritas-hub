@@ -112,3 +112,11 @@ location_ui = (root / "verified-campus-locations.js").read_text(encoding="utf-8"
 assert "published=eq.true" in location_ui
 assert "textContent = place.name" in location_ui
 assert "verified-campus-locations.js" in (root / "index.html").read_text(encoding="utf-8")
+
+# Approved map pins only: no hard-coded campus coordinates or unsafe popup HTML.
+verified_map = (root / "verified-campus-locations.js").read_text(encoding="utf-8")
+for marker in ("renderPinMap(matches)", "pinLayer.clearLayers()", "marker.bindPopup(label)", "label.textContent = place.name", "published=eq.true"):
+    assert marker in verified_map, f"Missing approved pin safeguard: {marker}"
+html_map = (root / "index.html").read_text(encoding="utf-8")
+assert 'id="verifiedCampusPinMap"' in html_map
+assert 'leaflet@1.9.4' in html_map
