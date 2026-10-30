@@ -477,6 +477,22 @@
       status.textContent = classes.length + ' published class(es) available for draft quizzes.';
     } catch (err) { status.textContent = err.message || 'Unable to load assigned classes.'; }
   };
+  window.academicScheduleAnswerKeyRelease = async (quizId) => {
+    const raw = window.prompt('Answer key release date/time (YYYY-MM-DD HH:MM), or blank to keep private:', '');
+    if (raw === null) return;
+    const when = raw.trim() ? new Date(raw.trim().replace(' ', 'T')) : null;
+    if (when && (!Number.isFinite(when.getTime()) || when.getTime() <= Date.now())) {
+      window.alert('Choose a valid future release time.'); return;
+    }
+    try {
+      const token = await accessToken();
+      const user = await request('/auth/v1/user', undefined, 'GET', token);
+      await verifiedTeachingClasses(token, user.id);
+      await request('/rest/v1/rpc/veritashub_schedule_answer_key_release',
+        {p_quiz:quizId,p_release_at:when ? when.toISOString() : null}, 'POST', token);
+      window.alert(when ? 'Answer key release scheduled.' : 'Answer key remains private.');
+    } catch (err) { window.alert(err.message || 'Could not schedule answer key release.'); }
+  };
   window.academicCreateQuizDraft = async () => {
     const status = el('quizDraftStatus');
     try {
@@ -776,11 +792,41 @@
           });
           row.append(button);
         }
+        const release = document.createElement('button');
+        release.type = 'button'; release.className = 'btn light';
+        release.textContent = 'Answer key release';
+        release.addEventListener('click', () => window.academicScheduleAnswerKeyRelease(quiz.id));
+        row.append(release);
         list.append(row);
       }
       status.textContent = (quizzes || []).length ? (quizzes || []).length + ' quiz(es) found.' :
         'No quizzes yet. Create a draft test for one of your assigned classes, then add questions before publishing.';
     } catch (err) { status.textContent = err.message || 'Unable to load quizzes.'; }
+  };
+  window.academicOverrideQuizScore = async (quizId) => {
+    const student = window.prompt('Student account UUID for this submitted quiz:');
+    if (student === null) return;
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(student.trim())) {
+      window.alert('Enter a valid student account UUID.'); return;
+    }
+    const rawScore = window.prompt('Corrected score (whole number):');
+    if (rawScore === null) return;
+    if (!/^(0|[1-9][0-9]*)$/.test(rawScore.trim())) {
+      window.alert('Enter a nonnegative whole-number score.'); return;
+    }
+    const reason = window.prompt('Reason for correction (10–1000 characters):');
+    if (reason === null) return;
+    if (reason.trim().length < 10 || reason.trim().length > 1000) {
+      window.alert('A reason of 10–1000 characters is required.'); return;
+    }
+    if (!window.confirm('Record an audited score correction for this student?')) return;
+    try {
+      const token = await accessToken();
+      await request('/rest/v1/rpc/veritashub_override_score',
+        {p_quiz:quizId,p_student:student.trim(),p_score:Number(rawScore),p_reason:reason.trim()},
+        'POST',token);
+      window.alert('Audited correction recorded. The original automatic grade is preserved.');
+    } catch (err) { window.alert(err.message || 'Score correction failed.'); }
   };
   window.academicViewQuizResults = async (quizId) => {
     const status = el('lecturerQuizStatus');
@@ -797,9 +843,27 @@
       summary.textContent = 'Submissions: ' + result.submissions +
         ' · Average: ' + (result.average_percent === null ? '—' : result.average_percent + '%') +
         ' · Highest: ' + (result.highest_percent === null ? '—' : result.highest_percent + '%');
-      container.append(heading, summary);
+      const override = document.createElement('button');
+      override.type = 'button'; override.className = 'btn light';
+      override.textContent = 'Record audited score correction';
+      override.addEventListener('click', () => window.academicOverrideQuizScore(quizId));
+      container.append(heading, summary, override);
       status.textContent = 'Result summary loaded.';
     } catch (err) { status.textContent = err.message || 'Unable to load results.'; }
+  };
+  window.academicViewReleasedAnswerKey = async (quizId, button) => {
+    button.disabled = true;
+    try {
+      const token = await accessToken();
+      const items = await request('/rest/v1/rpc/veritashub_get_released_answer_key',
+        {p_quiz:quizId}, 'POST', token);
+      if (!Array.isArray(items)) throw new Error('Unexpected answer key response.');
+      const result = items.map((item, i) => 'Question ' + (i + 1) +
+        ': correct option ' + (Number(item.correct_index) + 1) +
+        ' · ' + item.marks + ' mark(s)').join('\n');
+      window.alert(result || 'No released answers are available.');
+    } catch (err) { window.alert(err.message || 'Answer key is not yet available.'); }
+    finally { button.disabled = false; }
   };
   window.academicLoadStudentResults = async () => {
     const status = el('studentResultStatus');
@@ -810,19 +874,23 @@
     status.textContent = 'Loading your private assessment results…';
     try {
       const token = await accessToken();
-      const [attempts, quizzes] = await Promise.all([
+      const [attempts, quizzes, overrides] = await Promise.all([
         request('/rest/v1/veritashub_quiz_attempts?select=quiz_id,score,total,submitted_at&order=submitted_at.desc',
           undefined, 'GET', token),
         request('/rest/v1/veritashub_quizzes?published=eq.true&select=id,title',
+          undefined, 'GET', token),
+        request('/rest/v1/veritashub_score_overrides?select=quiz_id,revised_score,created_at,id&order=created_at.desc',
           undefined, 'GET', token)
       ]);
       const names = new Map((quizzes || []).map(q => [q.id, q.title]));
+      const corrected = new Map();
+      for (const entry of overrides || []) if (!corrected.has(entry.quiz_id)) corrected.set(entry.quiz_id, entry.revised_score);
       const records = (attempts || []).filter(a => Number(a.total) > 0);
       if (!records.length) {
         status.textContent = 'No completed tests yet. Open Available tests, choose a published quiz, and submit your answers to see scores here.';
         return;
       }
-      const percentages = records.map(a => 100 * Number(a.score) / Number(a.total));
+      const percentages = records.map(a => 100 * Number(corrected.has(a.quiz_id) ? corrected.get(a.quiz_id) : a.score) / Number(a.total));
       const mean = percentages.reduce((sum, value) => sum + value, 0) / percentages.length;
       const overview = document.createElement('p');
       overview.textContent = 'Completed tests: ' + records.length + ' · Average score: ' + mean.toFixed(1) + '%' +
@@ -835,11 +903,16 @@
         const label = document.createElement('strong');
         label.textContent = names.get(attempt.quiz_id) || 'Completed assessment';
         const score = document.createElement('p');
-        const percent = 100 * Number(attempt.score) / Number(attempt.total);
+        const percent = 100 * Number(corrected.has(attempt.quiz_id) ? corrected.get(attempt.quiz_id) : attempt.score) / Number(attempt.total);
         const submitted = attempt.submitted_at ? new Date(attempt.submitted_at) : null;
-        score.textContent = attempt.score + '/' + attempt.total + ' (' + percent.toFixed(1) + '%)' +
+        score.textContent = (corrected.has(attempt.quiz_id) ? corrected.get(attempt.quiz_id) : attempt.score) + '/' + attempt.total + ' (' + percent.toFixed(1) + '%)' +
           (submitted && !Number.isNaN(submitted.getTime()) ? ' · Submitted ' + submitted.toLocaleString() : '');
-        row.append(label, score);
+        if (corrected.has(attempt.quiz_id)) score.textContent += ' · Lecturer-adjusted (original: ' + attempt.score + ')';
+        const keyButton = document.createElement('button');
+        keyButton.type = 'button'; keyButton.className = 'btn light';
+        keyButton.textContent = 'View released answer key';
+        keyButton.addEventListener('click', () => window.academicViewReleasedAnswerKey(attempt.quiz_id, keyButton));
+        row.append(label, score, keyButton);
         list.append(row);
       }
       status.textContent = 'Showing your completed assessments only.';
