@@ -130,6 +130,8 @@ If the SQL has not been run yet, the website will show that the shared counter i
 
 - [x] Actionable empty-state guidance for student assessment history — [#32](https://github.com/V1R0X-Coder/veritas-hub/pull/32); browser verification pending
 
+- [x] Student quiz exit control warns about unsaved answers — [#33](https://github.com/V1R0X-Coder/veritas-hub/pull/33); browser verification pending
+
 ### Campus maps and navigation — parallel workstream
 - [x] Campus place directory, map-search links, satellite reference and opt-in device GPS — existing prototype; coordinates and internal routes unverified
 - [x] Switch between satellite and street map references and open external walking directions — [#12](https://github.com/V1R0X-Coder/veritas-hub/pull/12); mobile browser smoke test outstanding
