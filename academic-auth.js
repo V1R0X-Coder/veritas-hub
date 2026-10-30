@@ -512,6 +512,130 @@
       status.textContent = 'Private quiz draft saved. Student publishing and grading are coming in the next release.';
     } catch (err) { status.textContent = err.message || 'Unable to save quiz draft.'; }
   };
+  window.academicLoadLecturerQuizzes = async () => {
+    const status = el('lecturerQuizStatus');
+    const list = el('lecturerQuizList');
+    list.replaceChildren();
+    try {
+      const token = await accessToken();
+      const user = await request('/auth/v1/user', undefined, 'GET', token);
+      await verifiedTeachingClasses(token, user.id);
+      const quizzes = await request('/rest/v1/veritashub_quizzes?lecturer_id=eq.' +
+        encodeURIComponent(user.id) + '&select=id,title,published&order=created_at.desc',
+        undefined, 'GET', token);
+      for (const quiz of quizzes || []) {
+        const row = document.createElement('div');
+        row.className = 'list-item';
+        const title = document.createElement('strong');
+        title.textContent = quiz.title + (quiz.published ? ' (published)' : ' (draft)');
+        row.append(title);
+        if (!quiz.published) {
+          const button = document.createElement('button');
+          button.type = 'button'; button.className = 'btn dark';
+          button.textContent = 'Publish';
+          button.addEventListener('click', async () => {
+            button.disabled = true;
+            try {
+              await request('/rest/v1/rpc/veritashub_publish_quiz', {p_quiz:quiz.id}, 'POST', token);
+              await window.academicLoadLecturerQuizzes();
+            } catch (err) { status.textContent = err.message || 'Publish failed.'; button.disabled = false; }
+          });
+          row.append(button);
+        }
+        list.append(row);
+      }
+      status.textContent = (quizzes || []).length + ' quiz(es) found.';
+    } catch (err) { status.textContent = err.message || 'Unable to load quizzes.'; }
+  };
+  window.academicLoadStudentQuizzes = async () => {
+    const status = el('studentQuizStatus');
+    const list = el('studentQuizList');
+    list.replaceChildren();
+    el('studentQuizQuestions').replaceChildren();
+    try {
+      const token = await accessToken();
+      const quizzes = await request('/rest/v1/veritashub_quizzes?published=eq.true&select=id,title&order=created_at.desc',
+        undefined, 'GET', token);
+      const results = await request('/rest/v1/veritashub_quiz_attempts?select=quiz_id,score,total',
+        undefined, 'GET', token);
+      const completed = new Map((results || []).map(x => [x.quiz_id,x]));
+      for (const quiz of quizzes || []) {
+        const row = document.createElement('div');
+        row.className = 'list-item';
+        const title = document.createElement('strong');
+        title.textContent = quiz.title;
+        row.append(title);
+        if (completed.has(quiz.id)) {
+          const result = document.createElement('span');
+          const value = completed.get(quiz.id);
+          result.textContent = 'Score: ' + value.score + '/' + value.total;
+          row.append(result);
+        } else {
+          const button = document.createElement('button');
+          button.type = 'button'; button.className = 'btn dark';
+          button.textContent = 'Take test';
+          button.addEventListener('click', () => window.academicTakeQuiz(quiz.id, quiz.title));
+          row.append(button);
+        }
+        list.append(row);
+      }
+      status.textContent = (quizzes || []).length + ' available test(s).';
+    } catch (err) { status.textContent = err.message || 'Unable to load tests.'; }
+  };
+  window.academicTakeQuiz = async (quizId, title) => {
+    const status = el('studentQuizStatus');
+    const container = el('studentQuizQuestions');
+    container.replaceChildren();
+    try {
+      const token = await accessToken();
+      const questions = await request('/rest/v1/rpc/veritashub_get_quiz_questions',
+        {p_quiz:quizId}, 'POST', token);
+      if (!Array.isArray(questions) || !questions.length) throw new Error('This test has no questions.');
+      const heading = document.createElement('h3');
+      heading.textContent = title;
+      container.append(heading);
+      const inputs = [];
+      for (const [index, question] of questions.entries()) {
+        const fieldset = document.createElement('fieldset');
+        const legend = document.createElement('legend');
+        legend.textContent = (index+1) + '. ' + question.prompt;
+        fieldset.append(legend);
+        const group = [];
+        for (const [choice, option] of question.options.entries()) {
+          const label = document.createElement('label');
+          const radio = document.createElement('input');
+          radio.type = 'radio'; radio.name = 'veritas-quiz-' + quizId + '-' + index;
+          radio.value = String(choice);
+          label.append(radio,document.createTextNode(' ' + option));
+          fieldset.append(label,document.createElement('div'));
+          group.push(radio);
+        }
+        inputs.push({id:question.id,radios:group});
+        container.append(fieldset);
+      }
+      const submit = document.createElement('button');
+      submit.type = 'button'; submit.className = 'btn dark'; submit.textContent = 'Submit answers';
+      submit.addEventListener('click', async () => {
+        const answers = {};
+        for (const item of inputs) {
+          const selected = item.radios.find(radio => radio.checked);
+          if (!selected) { status.textContent = 'Answer every question before submitting.'; return; }
+          answers[item.id] = Number(selected.value);
+        }
+        submit.disabled = true;
+        try {
+          const result = await request('/rest/v1/rpc/veritashub_submit_quiz',
+            {p_quiz:quizId,p_answers:answers}, 'POST', token);
+          container.replaceChildren();
+          status.textContent = 'Test submitted. Your score: ' + result.score + '/' + result.total;
+          await window.academicLoadStudentQuizzes();
+          status.textContent = 'Test submitted. Your score: ' + result.score + '/' + result.total;
+        } catch (err) { status.textContent = err.message || 'Submission failed.'; submit.disabled = false; }
+      });
+      container.append(submit);
+      status.textContent = 'Complete every question and submit once.';
+    } catch (err) { status.textContent = err.message || 'Unable to open test.'; }
+  };
   document.addEventListener('DOMContentLoaded', () => {
     if (session()) status('Previous academic session found. Sign in again if it has expired.');
   });
