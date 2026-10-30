@@ -167,3 +167,9 @@ assert "campus-walking-routes.js" in (root / "index.html").read_text(encoding="u
 for legacy_doc in ("DEPLOYMENT-CHECKLIST.md", "README-SHARED-FORUM.txt", "README-SHARED-SYSTEM.txt", "README.txt"):
     assert not (root / legacy_doc).exists(), f"Auxiliary documentation remains in repository root: {legacy_doc}"
     assert (root / "docs" / legacy_doc).is_file(), f"Missing relocated documentation: {legacy_doc}"
+
+# Offline directory must be bounded and visibly marked stale; no cached navigation pins.
+offline_map = (root / "verified-campus-locations.js").read_text(encoding="utf-8")
+for marker in ("MAX_CACHE_AGE_MS", "readCachedLocations", "cachePublishedLocations", "OFFLINE REFERENCE", "if (offlineCopy)", "live map pins are disabled"):
+    assert marker in offline_map, f"Missing campus offline safety behavior: {marker}"
+assert "navigator.geolocation" not in offline_map
