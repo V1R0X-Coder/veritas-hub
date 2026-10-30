@@ -477,6 +477,22 @@
       status.textContent = classes.length + ' published class(es) available for draft quizzes.';
     } catch (err) { status.textContent = err.message || 'Unable to load assigned classes.'; }
   };
+  window.academicScheduleAnswerKeyRelease = async (quizId) => {
+    const raw = window.prompt('Answer key release date/time (YYYY-MM-DD HH:MM), or blank to keep private:', '');
+    if (raw === null) return;
+    const when = raw.trim() ? new Date(raw.trim().replace(' ', 'T')) : null;
+    if (when && (!Number.isFinite(when.getTime()) || when.getTime() <= Date.now())) {
+      window.alert('Choose a valid future release time.'); return;
+    }
+    try {
+      const token = await accessToken();
+      const user = await request('/auth/v1/user', undefined, 'GET', token);
+      await verifiedTeachingClasses(token, user.id);
+      await request('/rest/v1/rpc/veritashub_schedule_answer_key_release',
+        {p_quiz:quizId,p_release_at:when ? when.toISOString() : null}, 'POST', token);
+      window.alert(when ? 'Answer key release scheduled.' : 'Answer key remains private.');
+    } catch (err) { window.alert(err.message || 'Could not schedule answer key release.'); }
+  };
   window.academicCreateQuizDraft = async () => {
     const status = el('quizDraftStatus');
     try {
@@ -759,6 +775,11 @@
           });
           row.append(button);
         }
+        const release = document.createElement('button');
+        release.type = 'button'; release.className = 'btn light';
+        release.textContent = 'Answer key release';
+        release.addEventListener('click', () => window.academicScheduleAnswerKeyRelease(quiz.id));
+        row.append(release);
         list.append(row);
       }
       status.textContent = (quizzes || []).length ? (quizzes || []).length + ' quiz(es) found.' :
@@ -783,6 +804,20 @@
       container.append(heading, summary);
       status.textContent = 'Result summary loaded.';
     } catch (err) { status.textContent = err.message || 'Unable to load results.'; }
+  };
+  window.academicViewReleasedAnswerKey = async (quizId, button) => {
+    button.disabled = true;
+    try {
+      const token = await accessToken();
+      const items = await request('/rest/v1/rpc/veritashub_get_released_answer_key',
+        {p_quiz:quizId}, 'POST', token);
+      if (!Array.isArray(items)) throw new Error('Unexpected answer key response.');
+      const result = items.map((item, i) => 'Question ' + (i + 1) +
+        ': correct option ' + (Number(item.correct_index) + 1) +
+        ' · ' + item.marks + ' mark(s)').join('\n');
+      window.alert(result || 'No released answers are available.');
+    } catch (err) { window.alert(err.message || 'Answer key is not yet available.'); }
+    finally { button.disabled = false; }
   };
   window.academicLoadStudentResults = async () => {
     const status = el('studentResultStatus');
@@ -822,7 +857,11 @@
         const submitted = attempt.submitted_at ? new Date(attempt.submitted_at) : null;
         score.textContent = attempt.score + '/' + attempt.total + ' (' + percent.toFixed(1) + '%)' +
           (submitted && !Number.isNaN(submitted.getTime()) ? ' · Submitted ' + submitted.toLocaleString() : '');
-        row.append(label, score);
+        const key = document.createElement('button');
+        key.type = 'button'; key.className = 'btn light';
+        key.textContent = 'View released answer key';
+        key.addEventListener('click', () => window.academicViewReleasedAnswerKey(attempt.quiz_id, key));
+        row.append(label, score, key);
         list.append(row);
       }
       status.textContent = 'Showing your completed assessments only.';
