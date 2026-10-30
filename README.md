@@ -87,9 +87,45 @@ This is a lightweight prototype metric, **not a verified count of individual peo
 If the SQL has not been run yet, the website will show that the shared counter is unavailable. This migration creates a separate analytics table and function; it does not change forum or shared-content tables.
 
 
-## Academic platform expansion (planned, not yet live)
+## Academic expansion delivery tracker (updated 2026-10-30)
 
-> **Planning status:** This roadmap describes proposed enhancements. It does not mean the features below are implemented or deployed. Preserve all existing site features and student data throughout development.
+**Tracking rule:** [x] means code merged and database migration verified, not necessarily tested end-to-end on production. [ ] means outstanding. Follow the PR links for implementation details.
+
+### Foundation — requirements 1–8 and lecturer permissions
+- [x] Academic student profile form and cloud sync — PRs [#2](https://github.com/V1R0X-Coder/veritas-hub/pull/2), [#3](https://github.com/V1R0X-Coder/veritas-hub/pull/3)
+- [x] Published class catalog and student enrollment with RLS — [#4](https://github.com/V1R0X-Coder/veritas-hub/pull/4)
+- [x] Verified lecturer assignment model and read-only dashboard — [#5](https://github.com/V1R0X-Coder/veritas-hub/pull/5)
+- [ ] Configure approved lecturer accounts and real published classes
+- [ ] Verify academic sign-up, class enrollment, lecturer authorization, and cloud sync in live mobile/desktop browsers
+
+### Class materials — requirements 32–38
+- [x] Class-scoped written teaching notes with publishing controls — [#6](https://github.com/V1R0X-Coder/veritas-hub/pull/6)
+- [x] Private PDF, Word, PowerPoint uploads/downloads and enrollment-based RLS — [#7](https://github.com/V1R0X-Coder/veritas-hub/pull/7)
+- [ ] Material version history and controlled replacement
+- [ ] File malware screening and live student/lecturer upload/download smoke tests
+
+### Assessments — requirements 39–56
+- [x] Verified lecturer multiple-choice quiz draft creation — [#8](https://github.com/V1R0X-Coder/veritas-hub/pull/8)
+- [x] Publish quiz, take quiz once, server-side automatic grading, private student results — [#9](https://github.com/V1R0X-Coder/veritas-hub/pull/9)
+- [ ] Multi-question editing, marks per question, quiz preview, deadlines and late-submission rules
+- [ ] Lecturer score dashboards, controlled overrides, percentage reporting and answer-key release controls
+- [ ] Authenticated end-to-end tests of publishing, taking, scoring and authorization boundaries
+
+### Live classrooms — requirements 9–20 and lecturer controls 21–31
+- [ ] Evaluate provider pricing, privacy, mobile bandwidth and moderation
+- [ ] Lecturer-controlled broadcast, student listen-only defaults, text questions and attendance
+
+### Quality, safety and release
+- [x] Scoped branches, PRs and CI checks — [#1](https://github.com/V1R0X-Coder/veritas-hub/pull/1)
+- [ ] CI integration tests for authenticated Supabase workflows
+- [ ] Verify GitHub Pages deployment and mobile/desktop smoke tests after each release
+- [ ] Production backup/rollback drills, accessibility and performance checks
+- [ ] Audit remaining unrelated StudyLink database security separately
+
+## Academic platform expansion (roadmap and requirements)
+
+
+> **Status:** The requirement descriptions below are the original roadmap, not a statement of current feature status. Consult the delivery tracker above for implemented and outstanding items. Preserve all existing site features and student data throughout development.
 
 ### Student academic profiles and enrollment (requirements 1–8)
 
