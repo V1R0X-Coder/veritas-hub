@@ -97,3 +97,8 @@ for filename, markers in {
     migration = (root / "supabase" / filename).read_text(encoding="utf-8")
     for marker in markers:
         assert marker in migration, f"Missing authorization control {marker} in {filename}"
+
+# Lecturer aggregate results must honor the latest audited correction.
+summary_sql = (root / "supabase/veritashub_override_aware_results.sql").read_text(encoding="utf-8")
+for marker in ("left join lateral", "revised_score", "created_at desc", "veritashub_lecturer_classes", "revoke all on function"):
+    assert marker in summary_sql, f"Missing corrected score summary guard: {marker}"
