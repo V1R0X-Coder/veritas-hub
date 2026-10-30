@@ -134,6 +134,8 @@ If the SQL has not been run yet, the website will show that the shared counter i
 
 - [x] Student quiz list highlights deadlines within 24 hours — [#34](https://github.com/V1R0X-Coder/veritas-hub/pull/34); browser verification pending
 
+- [x] Lecturer dashboard provides actionable no-quiz guidance — [#35](https://github.com/V1R0X-Coder/veritas-hub/pull/35); browser verification pending
+
 ### Campus maps and navigation — parallel workstream
 - [x] Campus place directory, map-search links, satellite reference and opt-in device GPS — existing prototype; coordinates and internal routes unverified
 - [x] Switch between satellite and street map references and open external walking directions — [#12](https://github.com/V1R0X-Coder/veritas-hub/pull/12); mobile browser smoke test outstanding
