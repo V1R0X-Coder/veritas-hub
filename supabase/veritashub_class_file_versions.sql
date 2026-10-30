@@ -66,7 +66,7 @@ begin
     join public.veritashub_lecturers l on l.user_id=lc.lecturer_id
     where lc.class_id=v_file.class_id and lc.lecturer_id=auth.uid() and l.active
   ) then raise exception 'Not authorized'; end if;
-  if p_storage_path not like v_file.class_id::text || '/' || auth.uid()::text || '/%'
+  if p_storage_path = v_file.storage_path or p_storage_path not like v_file.class_id::text || '/' || auth.uid()::text || '/%'
     or p_file_name is null or char_length(p_file_name) not between 1 and 200
     or p_file_size not between 1 and 10485760
     or p_mime_type not in (
@@ -77,8 +77,11 @@ begin
   then raise exception 'Invalid replacement file'; end if;
   -- Confirm the uploaded object exists in the private bucket.
   if not exists (select 1 from storage.objects
-    where bucket_id='veritashub-class-files' and name=p_storage_path)
+    where bucket_id='veritashub-class-files' and name=p_storage_path and owner_id=auth.uid()::text)
   then raise exception 'Replacement upload not found'; end if;
+  if exists (select 1 from public.veritashub_class_file_versions where storage_path=p_storage_path) then
+    raise exception 'File version already recorded';
+  end if;
   select coalesce(max(version_number),0)+1 into v_next
     from public.veritashub_class_file_versions where file_id=p_file_id;
   if v_next=1 then
