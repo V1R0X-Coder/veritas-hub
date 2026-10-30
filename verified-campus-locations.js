@@ -4,6 +4,30 @@
   const URL = 'https://wutgiojgomcsocfqxnml.supabase.co';
   const KEY = 'sb_publishable_3-xb2zcXFzqfSiTKqip7Lw_6KF9qiI_';
   let approved = [];
+  const CACHE_KEY = 'veritashub-public-campus-directory-v1';
+  const MAX_CACHE_AGE_MS = 24 * 60 * 60 * 1000;
+  let offlineCopy = false;
+  function readCachedLocations() {
+    try {
+      const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+      if (!cached || !Array.isArray(cached.places) ||
+          !Number.isFinite(cached.savedAt) ||
+          Date.now() - cached.savedAt < 0 ||
+          Date.now() - cached.savedAt > MAX_CACHE_AGE_MS) return null;
+      return cached;
+    } catch (_) { return null; }
+  }
+  function cachePublishedLocations(places) {
+    try {
+      localStorage.setItem(CACHE_KEY, JSON.stringify({
+        savedAt: Date.now(), places: places.map(p => ({
+          id:p.id,name:p.name,category:p.category,latitude:p.latitude,
+          longitude:p.longitude,accessibility_note:p.accessibility_note,
+          verified_at:p.verified_at
+        }))
+      }));
+    } catch (_) { /* Browsers may disable local storage. */ }
+  }
   const el = id => document.getElementById(id);
   let map = null;
   let pinLayer = null;
@@ -73,9 +97,16 @@
       card.append(link);
       list.append(card);
     }
-    renderPinMap(matches);
+    if (offlineCopy) {
+      // Offline copies can be outdated or revoked; never show cached pins as live map guidance.
+      if (map) { map.remove(); map = null; pinLayer = null; }
+      const host = el('verifiedCampusPinMap');
+      if (host) host.textContent = 'Offline reference only: live map pins are disabled until connectivity returns.';
+    } else renderPinMap(matches);
     const status = el('verifiedCampusLocationsStatus');
-    if (status) status.textContent = matches.length
+    if (status) status.textContent = offlineCopy
+      ? 'OFFLINE REFERENCE — cached locations may be outdated or unpublished. Confirm with campus staff before traveling. ' + matches.length + ' saved place(s).'
+      : matches.length
       ? matches.length + ' verified location(s) shown.'
       : approved.length ? 'No verified locations match your search.'
         : 'No campus locations have been independently verified and published yet.';
@@ -88,10 +119,21 @@
         'published=eq.true&select=id,name,category,latitude,longitude,accessibility_note,verified_at&order=name.asc',
         {headers:{apikey:KEY}});
       if (!response.ok) throw new Error('Location directory is temporarily unavailable.');
-      approved = await response.json();
+      const rows = await response.json();
+      if (!Array.isArray(rows)) throw new Error('Invalid campus directory response.');
+      approved = rows;
+      offlineCopy = false;
+      cachePublishedLocations(rows);
       window.renderVerifiedCampusLocations();
     } catch (_) {
-      status.textContent = 'Unable to load verified locations. Please try again later.';
+      const cached = readCachedLocations();
+      if (cached) {
+        approved = cached.places;
+        offlineCopy = true;
+        window.renderVerifiedCampusLocations();
+      } else {
+        status.textContent = 'Verified locations are unavailable offline. Reconnect to load the current approved directory.';
+      }
     }
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', load);
