@@ -120,3 +120,13 @@ for marker in ("renderPinMap(matches)", "pinLayer.clearLayers()", "marker.bindPo
 html_map = (root / "index.html").read_text(encoding="utf-8")
 assert 'id="verifiedCampusPinMap"' in html_map
 assert 'leaflet@1.9.4' in html_map
+
+# Submitted campus suggestions must never self-approve or become public pins.
+intake_sql = (root / "supabase/veritashub_campus_location_submissions.sql").read_text(encoding="utf-8")
+for marker in ("enable row level security", "grant select,insert", "status='pending'", "submitted_by = (select auth.uid())"):
+    assert marker in intake_sql, f"Missing intake security guard: {marker}"
+assert "grant update" not in intake_sql.lower()
+intake_js = (root / "campus-verification.js").read_text(encoding="utf-8")
+assert "veritashub_campus_location_submissions" in intake_js
+assert "veritashub_verified_campus_locations" not in intake_js
+assert "campus-verification.js" in (root / "index.html").read_text(encoding="utf-8")
