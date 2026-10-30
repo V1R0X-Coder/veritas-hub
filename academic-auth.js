@@ -944,6 +944,14 @@
         status.textContent = 'Answers cleared. You can start again.';
       });
       container.append(clear);
+      const exit = document.createElement('button');
+      exit.type = 'button'; exit.className = 'btn light'; exit.textContent = 'Exit test';
+      exit.addEventListener('click', () => {
+        if (!window.confirm('Exit this test? Unsaved answers will be lost.')) return;
+        container.replaceChildren();
+        status.textContent = 'Test closed without submitting any answers.';
+      });
+      container.append(exit);
       status.textContent = 'Complete every question and submit once.';
     } catch (err) { status.textContent = err.message || 'Unable to open test.'; }
   };
