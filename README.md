@@ -117,7 +117,7 @@ If the SQL has not been run yet, the website will show that the shared counter i
 - [x] Marks per question and configurable late-submission rules — [#39](https://github.com/V1R0X-Coder/veritas-hub/pull/39), [#40](https://github.com/V1R0X-Coder/veritas-hub/pull/40); merged with static CI passing; authenticated integration tests and production smoke checks remain tracked separately
 - [x] Lecturer-only aggregate quiz results (submissions, average and highest percentages) — [#11](https://github.com/V1R0X-Coder/veritas-hub/pull/11); authenticated browser verification outstanding
 - [x] Private student score history and average percentage dashboard (existing own-attempt RLS) — [#18](https://github.com/V1R0X-Coder/veritas-hub/pull/18); authenticated browser verification outstanding
-- [ ] Controlled score overrides and answer-key release controls
+- [x] Controlled score overrides and answer-key release controls — [#44](https://github.com/V1R0X-Coder/veritas-hub/pull/44); merged with passing static CI; authenticated E2E and deployment smoke checks remain separately outstanding
 - [ ] Authenticated end-to-end tests of publishing, taking, scoring and authorization boundaries
 
 - [x] Student quiz submission focuses the first unanswered question — [#28](https://github.com/V1R0X-Coder/veritas-hub/pull/28); authenticated browser testing pending
