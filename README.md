@@ -136,6 +136,7 @@ If the SQL has not been run yet, the website will show that the shared counter i
 ### Navigation and mobile usability
 - [x] Group the existing sidebar into Academics, Campus life, Student community and My account, retaining standalone Home dashboard and support shortcut — [#20](https://github.com/V1R0X-Coder/veritas-hub/pull/20)
 - [x] Accessible collapsible categories, keyboard focus, active-page expansion and mobile touch targets — [#20](https://github.com/V1R0X-Coder/veritas-hub/pull/20); device smoke test pending
+- [x] Mobile navigation Escape-to-close, menu expanded-state announcements, focus return and responsive breakpoint alignment — [#21](https://github.com/V1R0X-Coder/veritas-hub/pull/21); physical device testing pending
 - [ ] Test navigation and deep page entry on Android, iOS, keyboard-only desktop and assistive technology
 
 ### Quality, safety and release
