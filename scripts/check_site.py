@@ -162,3 +162,8 @@ walking_js = (root / "campus-walking-routes.js").read_text(encoding="utf-8")
 for marker in ("veritashub_campus_walking_edges", "No fully verified walking route", "distance_m", "prev.set"):
     assert marker in walking_js, f"Missing verified walking route behavior: {marker}"
 assert "campus-walking-routes.js" in (root / "index.html").read_text(encoding="utf-8")
+
+# Keep auxiliary documentation in docs/ while preserving GitHub's root README.
+for legacy_doc in ("DEPLOYMENT-CHECKLIST.md", "README-SHARED-FORUM.txt", "README-SHARED-SYSTEM.txt", "README.txt"):
+    assert not (root / legacy_doc).exists(), f"Auxiliary documentation remains in repository root: {legacy_doc}"
+    assert (root / "docs" / legacy_doc).is_file(), f"Missing relocated documentation: {legacy_doc}"

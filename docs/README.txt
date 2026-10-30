@@ -27,7 +27,7 @@ New features:
 - New forum posts, replies, and classroom links are included in the demo data export/clear functions.
 
 IMPORTANT LIMITATIONS:
-- By default, forum posts and classroom listings are saved in this browser on this device only. The shared-forum starter can be enabled by following README-SHARED-FORUM.txt and running supabase-forum-setup.sql in a Supabase project. Classroom listings remain local in this version.
+- By default, forum posts and classroom listings are saved in this browser on this device only. The shared-forum starter can be enabled by following docs/README-SHARED-FORUM.txt and running supabase-forum-setup.sql in a Supabase project. Classroom listings remain local in this version.
 - The virtual classroom page does not carry live audio/video. It organises links to an external meeting or livestream service. Do not paste private links unless the lecturer has approved sharing them.
 - A real university rollout needs verified student and lecturer accounts, moderation/reporting, stricter permissions, privacy rules, backups, and a school-approved live class provider. The starter shared forum is an early pilot only and allows anonymous read/create, not public edits or deletes.
 - For a pilot, start with one JUPEB subject and a small test group, confirm the lecturer's approval, and test joining from both a phone and laptop before expanding.

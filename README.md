@@ -65,7 +65,7 @@ You have already run the feedback/inbox migration and received **“Success. No 
 
 - `index.html` — complete website (HTML, CSS and JavaScript in one file).
 - `supabase-*.sql` — database setup/migration scripts.
-- `README-SHARED-SYSTEM.txt` and related TXT files — additional project notes.
+- `docs/README-SHARED-SYSTEM.txt` and related files in `docs/` — additional project notes.
 - `.nojekyll` — tells GitHub Pages not to apply Jekyll processing.
 
 
