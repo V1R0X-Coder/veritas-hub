@@ -1,0 +1,24 @@
+name: Authenticated assessment staging tests
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    environment: assessment-staging
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify student and outsider authorization with real staging accounts
+        env:
+          VERITASHUB_TEST_URL: ${{ secrets.VERITASHUB_TEST_URL }}
+          VERITASHUB_TEST_ANON_KEY: ${{ secrets.VERITASHUB_TEST_ANON_KEY }}
+          VERITASHUB_TEST_STUDENT_EMAIL: ${{ secrets.VERITASHUB_TEST_STUDENT_EMAIL }}
+          VERITASHUB_TEST_STUDENT_PASSWORD: ${{ secrets.VERITASHUB_TEST_STUDENT_PASSWORD }}
+          VERITASHUB_TEST_OUTSIDER_EMAIL: ${{ secrets.VERITASHUB_TEST_OUTSIDER_EMAIL }}
+          VERITASHUB_TEST_OUTSIDER_PASSWORD: ${{ secrets.VERITASHUB_TEST_OUTSIDER_PASSWORD }}
+          VERITASHUB_TEST_QUIZ_ID: ${{ secrets.VERITASHUB_TEST_QUIZ_ID }}
+        run: python tests/assessment_auth_smoke.py
