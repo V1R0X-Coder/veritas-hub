@@ -85,7 +85,7 @@
     if (!status) return;
     try {
       const response = await fetch(URL + '/rest/v1/veritashub_verified_campus_locations?' +
-        'published=eq.true&select=name,category,latitude,longitude,accessibility_note,verified_at&order=name.asc',
+        'published=eq.true&select=id,name,category,latitude,longitude,accessibility_note,verified_at&order=name.asc',
         {headers:{apikey:KEY}});
       if (!response.ok) throw new Error('Location directory is temporarily unavailable.');
       approved = await response.json();

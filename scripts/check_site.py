@@ -153,3 +153,12 @@ for marker in ("veritashub_campus_publishers", "veritashub_campus_review_events"
     assert marker in publication_sql, f"Missing campus publication safeguard: {marker}"
 assert "grant insert on public.veritashub_campus_publishers" not in publication_sql.lower()
 assert (root / "docs/campus-pin-publication.md").exists()
+
+# Routes must use approved walking segments, not straight-line distances.
+walking_sql = (root / "supabase/veritashub_campus_walking_edges.sql").read_text(encoding="utf-8")
+for marker in ("enable row level security", "published=true", "a.published=true", "b.published=true", "verification_source", "revoke all"):
+    assert marker in walking_sql, f"Missing verified walking guard: {marker}"
+walking_js = (root / "campus-walking-routes.js").read_text(encoding="utf-8")
+for marker in ("veritashub_campus_walking_edges", "No fully verified walking route", "distance_m", "prev.set"):
+    assert marker in walking_js, f"Missing verified walking route behavior: {marker}"
+assert "campus-walking-routes.js" in (root / "index.html").read_text(encoding="utf-8")
