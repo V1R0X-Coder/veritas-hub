@@ -82,3 +82,18 @@ weighted_sql = (root / "supabase/veritashub_weighted_quiz_grading.sql").read_tex
 assert "sum(marks)" in weighted_sql
 assert "jsonb_object_keys" in weighted_sql
 assert "grant update(marks)" in (root / "supabase/veritashub_question_marks_edit_grant.sql").read_text(encoding="utf-8")
+
+# Assessment controls: both client workflows must rely on restricted RPCs.
+assessment_ui = (root / "academic-auth.js").read_text(encoding="utf-8")
+for marker in ("window.academicOverrideQuizScore", "/rpc/veritashub_override_score",
+               "window.academicScheduleAnswerKeyRelease", "/rpc/veritashub_schedule_answer_key_release",
+               "window.academicViewReleasedAnswerKey", "/rpc/veritashub_get_released_answer_key"):
+    assert marker in assessment_ui, f"Missing assessment control: {marker}"
+for filename, markers in {
+    "veritashub_score_overrides.sql": ("enable row level security", "veritashub_lecturer_classes", "for update", "revoke all on function"),
+    "veritashub_answer_key_release.sql": ("veritashub_quiz_attempts", "answer_key_release_at", "clock_timestamp()", "revoke all on function"),
+    "veritashub_answer_key_schedule_rpc.sql": ("veritashub_lecturer_classes", "auth.uid()", "revoke all on function"),
+}.items():
+    migration = (root / "supabase" / filename).read_text(encoding="utf-8")
+    for marker in markers:
+        assert marker in migration, f"Missing authorization control {marker} in {filename}"
