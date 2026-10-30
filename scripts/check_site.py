@@ -146,3 +146,10 @@ for marker in ("veritashub_campus_reviewers", "auth.uid()", "for update", "publi
 assert "grant insert on public.veritashub_campus_reviewers" not in review_rpc.lower()
 assert "grant update on public.veritashub_verified_campus_locations" not in review_rpc.lower()
 assert "campus-reviewer.js" in (root / "index.html").read_text(encoding="utf-8")
+
+# Publication must require independent review and an appointed second actor.
+publication_sql = (root / "supabase/veritashub_campus_publication_control.sql").read_text(encoding="utf-8")
+for marker in ("veritashub_campus_publishers", "veritashub_campus_review_events", "v_reviewer=v_actor", "for update", "veritashub_campus_publication_events", "revoke all"):
+    assert marker in publication_sql, f"Missing campus publication safeguard: {marker}"
+assert "grant insert on public.veritashub_campus_publishers" not in publication_sql.lower()
+assert (root / "docs/campus-pin-publication.md").exists()
