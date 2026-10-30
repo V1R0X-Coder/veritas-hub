@@ -801,7 +801,7 @@
       const names = new Map((quizzes || []).map(q => [q.id, q.title]));
       const records = (attempts || []).filter(a => Number(a.total) > 0);
       if (!records.length) {
-        status.textContent = 'No completed tests yet.';
+        status.textContent = 'No completed tests yet. Open Available tests, choose a published quiz, and submit your answers to see scores here.';
         return;
       }
       const percentages = records.map(a => 100 * Number(a.score) / Number(a.total));
