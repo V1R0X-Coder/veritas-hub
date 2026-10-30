@@ -593,11 +593,24 @@
           button.type = 'button'; button.className = 'btn dark';
           button.textContent = 'Publish';
           button.addEventListener('click', async () => {
+            const warning = 'Publish “' + quiz.title + '” now?\\n\\n' +
+              'Students enrolled in this class will be able to take the test. ' +
+              'Check every question and correct answer before continuing. ' +
+              'Published quizzes cannot be edited in the current interface.';
+            if (!window.confirm(warning)) {
+              status.textContent = 'Publishing cancelled. Your quiz remains a draft.';
+              return;
+            }
             button.disabled = true;
+            status.textContent = 'Publishing quiz…';
             try {
               await request('/rest/v1/rpc/veritashub_publish_quiz', {p_quiz:quiz.id}, 'POST', token);
               await window.academicLoadLecturerQuizzes();
-            } catch (err) { status.textContent = err.message || 'Publish failed.'; button.disabled = false; }
+              status.textContent = 'Quiz published. Enrolled students can now access it.';
+            } catch (err) {
+              status.textContent = err.message || 'Publish failed. Your quiz was not confirmed as published.';
+              button.disabled = false;
+            }
           });
           row.append(button);
         }
