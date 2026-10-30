@@ -788,6 +788,11 @@
       const heading = document.createElement('h3');
       heading.textContent = title;
       container.append(heading);
+      const progress = document.createElement('p');
+      progress.setAttribute('role', 'status');
+      progress.setAttribute('aria-live', 'polite');
+      progress.textContent = 'Answered 0 of ' + questions.length + ' questions';
+      container.append(progress);
       const inputs = [];
       for (const [index, question] of questions.entries()) {
         const fieldset = document.createElement('fieldset');
@@ -805,6 +810,10 @@
           group.push(radio);
         }
         inputs.push({id:question.id,radios:group});
+        group.forEach(radio => radio.addEventListener('change', () => {
+          const answered = inputs.filter(item => item.radios.some(input => input.checked)).length;
+          progress.textContent = 'Answered ' + answered + ' of ' + questions.length + ' questions';
+        }));
         container.append(fieldset);
       }
       const submit = document.createElement('button');
@@ -816,7 +825,13 @@
           if (!selected) { status.textContent = 'Answer every question before submitting.'; return; }
           answers[item.id] = Number(selected.value);
         }
+        if (!window.confirm('Submit your ' + questions.length +
+          ' answers now? You cannot change them after submission.')) {
+          status.textContent = 'Submission cancelled. Your selected answers are still here.';
+          return;
+        }
         submit.disabled = true;
+        status.textContent = 'Submitting your answers…';
         try {
           const result = await request('/rest/v1/rpc/veritashub_submit_quiz',
             {p_quiz:quizId,p_answers:answers}, 'POST', token);
