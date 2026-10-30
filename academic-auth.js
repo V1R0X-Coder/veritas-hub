@@ -306,6 +306,157 @@
       status.textContent = 'Note saved successfully. ' + status.textContent;
     } catch (err) { status.textContent = err.message || 'Unable to save note.'; }
   };
+  const FILE_BUCKET = 'veritashub-class-files';
+  const FILE_TYPES = new Set([
+    'application/pdf','application/msword',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'application/vnd.ms-powerpoint',
+    'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+  ]);
+  const FILE_EXTENSIONS = {pdf:'application/pdf',doc:'application/msword',
+    docx:'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    ppt:'application/vnd.ms-powerpoint',
+    pptx:'application/vnd.openxmlformats-officedocument.presentationml.presentation'};
+  async function storageRequest(path, token, method, file, contentType) {
+    const response = await fetch(URL + '/storage/v1/object/' + FILE_BUCKET + '/' +
+      path.split('/').map(encodeURIComponent).join('/'), {
+      method, headers: {apikey:KEY, Authorization:'Bearer ' + token,
+        ...(contentType ? {'Content-Type':contentType} : {})},
+      ...(file ? {body:file} : {})
+    });
+    if (!response.ok) {
+      const body = await response.text();
+      let error;
+      try { error = JSON.parse(body); } catch (_) { error = {}; }
+      throw new Error(error.message || error.error || 'Storage request failed (' + response.status + ').');
+    }
+    return response;
+  }
+  async function downloadAcademicFile(row) {
+    const token = await accessToken();
+    const response = await storageRequest(row.storage_path, token, 'GET');
+    const blob = await response.blob();
+    const objectUrl = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = objectUrl;
+    link.download = row.file_name;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(objectUrl), 60000);
+  }
+  function renderAcademicFiles(target, rows) {
+    const container = el(target);
+    container.replaceChildren();
+    for (const row of rows) {
+      const card = document.createElement('div');
+      card.className = 'list-item';
+      const info = document.createElement('div');
+      const title = document.createElement('strong');
+      title.textContent = row.title + (row.published ? '' : ' (draft)');
+      const description = document.createElement('p');
+      description.textContent = row.file_name + ' · ' + Math.ceil(row.file_size / 1024) + ' KB';
+      info.append(title, description);
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'chip';
+      button.textContent = 'Download';
+      button.addEventListener('click', async () => {
+        button.disabled = true;
+        try { await downloadAcademicFile(row); }
+        catch (err) { window.alert(err.message || 'Unable to download document.'); }
+        finally { button.disabled = false; }
+      });
+      card.append(info, button);
+      container.append(card);
+    }
+  }
+  window.academicLoadStudentFiles = async () => {
+    const status = el('studentFilesStatus');
+    el('studentFilesList').replaceChildren();
+    try {
+      status.textContent = 'Loading class documents…';
+      const token = await accessToken();
+      const enrolled = await request('/rest/v1/veritashub_class_enrollments?select=class_id',
+        undefined, 'GET', token);
+      const ids = (enrolled || []).map(row => row.class_id);
+      if (!ids.length) { status.textContent = 'Join a class to access its published documents.'; return; }
+      const files = await request('/rest/v1/veritashub_class_files?published=eq.true&class_id=in.(' +
+        ids.map(encodeURIComponent).join(',') +
+        ')&select=title,file_name,storage_path,file_size,published&order=created_at.desc',
+        undefined, 'GET', token);
+      renderAcademicFiles('studentFilesList', files || []);
+      status.textContent = files.length + ' published document(s) available.';
+    } catch (err) { status.textContent = err.message || 'Unable to load documents.'; }
+  };
+  window.academicLoadLecturerFiles = async () => {
+    const status = el('lecturerFilesStatus');
+    el('lecturerFilesList').replaceChildren();
+    try {
+      status.textContent = 'Loading teaching documents…';
+      const token = await accessToken();
+      const user = await request('/auth/v1/user', undefined, 'GET', token);
+      const classes = await verifiedTeachingClasses(token, user.id);
+      const selector = el('lecturerFileClass');
+      const previous = selector.value;
+      selector.replaceChildren();
+      const empty = document.createElement('option');
+      empty.value = ''; empty.textContent = 'Choose an assigned class';
+      selector.append(empty);
+      for (const cls of classes) {
+        const option = document.createElement('option');
+        option.value = cls.id;
+        option.textContent = cls.subject_code + ' · ' + cls.title;
+        selector.append(option);
+      }
+      if (classes.some(c => c.id === previous)) selector.value = previous;
+      const files = await request('/rest/v1/veritashub_class_files?lecturer_id=eq.' +
+        encodeURIComponent(user.id) +
+        '&select=title,file_name,storage_path,file_size,published&order=created_at.desc',
+        undefined, 'GET', token);
+      renderAcademicFiles('lecturerFilesList', files || []);
+      status.textContent = files.length + ' document(s) found; ' + classes.length + ' assigned published class(es).';
+    } catch (err) { status.textContent = err.message || 'Unable to load documents.'; }
+  };
+  window.academicUploadClassFile = async () => {
+    const status = el('lecturerFilesStatus');
+    try {
+      status.textContent = 'Checking document and permissions…';
+      const token = await accessToken();
+      const user = await request('/auth/v1/user', undefined, 'GET', token);
+      const classes = await verifiedTeachingClasses(token, user.id);
+      const classId = el('lecturerFileClass').value;
+      if (!classes.some(c => c.id === classId)) throw new Error('Select a verified assigned class.');
+      const title = el('lecturerFileTitle').value.trim();
+      const file = el('lecturerFileInput').files[0];
+      if (title.length < 3 || title.length > 160) throw new Error('Enter a title of 3–160 characters.');
+      if (!file || !file.size || file.size > 10485760) throw new Error('Choose a document of at most 10 MB.');
+      const extension = (file.name.split('.').pop() || '').toLowerCase();
+      const expectedMime = FILE_EXTENSIONS[extension];
+      if (!expectedMime || !FILE_TYPES.has(expectedMime) ||
+          (file.type && file.type !== expectedMime))
+        throw new Error('Only PDF, DOC, DOCX, PPT or PPTX documents are supported.');
+      const fileName = file.name.slice(0, 200);
+      const path = classId + '/' + user.id + '/' + crypto.randomUUID() + '.' + extension;
+      status.textContent = 'Uploading private document…';
+      await storageRequest(path, token, 'POST', file, expectedMime);
+      try {
+        await request('/rest/v1/veritashub_class_files', {
+          class_id:classId, lecturer_id:user.id, title, file_name:fileName,
+          storage_path:path, mime_type:expectedMime, file_size:file.size,
+          published:el('lecturerFilePublished').checked
+        }, 'POST', token);
+      } catch (error) {
+        try { await storageRequest(path, token, 'DELETE'); } catch (_) {}
+        throw error;
+      }
+      el('lecturerFileTitle').value = '';
+      el('lecturerFileInput').value = '';
+      el('lecturerFilePublished').checked = false;
+      await window.academicLoadLecturerFiles();
+      status.textContent = 'Document uploaded successfully. ' + status.textContent;
+    } catch (err) { status.textContent = err.message || 'Unable to upload document.'; }
+  };
   document.addEventListener('DOMContentLoaded', () => {
     if (session()) status('Previous academic session found. Sign in again if it has expired.');
   });
