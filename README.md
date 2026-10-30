@@ -107,7 +107,7 @@ If the SQL has not been run yet, the website will show that the shared counter i
 ### Assessments — requirements 39–56
 - [x] Verified lecturer multiple-choice quiz draft creation — [#8](https://github.com/V1R0X-Coder/veritas-hub/pull/8)
 - [x] Publish quiz, take quiz once, server-side automatic grading, private student results — [#9](https://github.com/V1R0X-Coder/veritas-hub/pull/9)
-- [ ] Multi-question editing, marks per question, quiz preview, deadlines and late-submission rules
+- [x] Optional submission deadline with server-side enforcement — [#10](https://github.com/V1R0X-Coder/veritas-hub/pull/10) (pending release verification)\n- [ ] Multi-question editing, marks per question, quiz preview and configurable late-submission rules
 - [ ] Lecturer score dashboards, controlled overrides, percentage reporting and answer-key release controls
 - [ ] Authenticated end-to-end tests of publishing, taking, scoring and authorization boundaries
 
