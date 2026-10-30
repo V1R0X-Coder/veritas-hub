@@ -82,6 +82,11 @@ begin
   if exists (select 1 from public.veritashub_class_file_versions where storage_path=p_storage_path) then
     raise exception 'File version already recorded';
   end if;
+  -- Never let a caller rebind a historical object to a different file.
+  if exists (
+    select 1 from public.veritashub_class_files f
+    where f.storage_path=p_storage_path
+  ) then raise exception 'Storage object is already in use'; end if;
   select coalesce(max(version_number),0)+1 into v_next
     from public.veritashub_class_file_versions where file_id=p_file_id;
   if v_next=1 then
