@@ -777,6 +777,11 @@
           });
           row.append(button);
         }
+        const release = document.createElement('button');
+        release.type = 'button'; release.className = 'btn light';
+        release.textContent = 'Answer key release';
+        release.addEventListener('click', () => window.academicScheduleAnswerKeyRelease(quiz.id));
+        row.append(release);
         list.append(row);
       }
       status.textContent = (quizzes || []).length ? (quizzes || []).length + ' quiz(es) found.' :
