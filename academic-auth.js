@@ -460,7 +460,7 @@
       if (!ids.length) { status.textContent = 'Join a class to access its published documents.'; return; }
       const files = await request('/rest/v1/veritashub_class_files?published=eq.true&class_id=in.(' +
         ids.map(encodeURIComponent).join(',') +
-        ')&select=title,file_name,storage_path,file_size,published&order=created_at.desc',
+        ')&select=id,title,file_name,storage_path,file_size,published&order=created_at.desc',
         undefined, 'GET', token);
       renderAcademicFiles('studentFilesList', files || []);
       status.textContent = files.length + ' published document(s) available.';
