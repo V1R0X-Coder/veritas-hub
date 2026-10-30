@@ -118,6 +118,7 @@ If the SQL has not been run yet, the website will show that the shared counter i
 - [x] Switch between satellite and street map references and open external walking directions — [#12](https://github.com/V1R0X-Coder/veritas-hub/pull/12); mobile browser smoke test outstanding
 - [ ] Verify campus building and keke stop coordinates with campus representatives before publishing pins
 - [x] Searchable suggested campus place directory with category filters — [#13](https://github.com/V1R0X-Coder/veritas-hub/pull/13); categories are provisional and browser verification remains outstanding
+- [x] Mobile-friendly campus place detail panel with category, verification warning, external map lookup and destination selection — [#15](https://github.com/V1R0X-Coder/veritas-hub/pull/15); browser smoke test pending
 - [ ] Interactive map with approved location pins, accessible labels and on-map filtering
 - [ ] Validated walking paths, step-by-step campus navigation and distance estimates
 - [x] Responsive campus map layout with phone-sized single-column view, 44px touch targets and readable directory cards — [#14](https://github.com/V1R0X-Coder/veritas-hub/pull/14); real-device smoke testing outstanding
