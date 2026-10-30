@@ -73,3 +73,12 @@ if external.is_file():
         assert marker in assessment, f"Missing assessment workflow marker: {marker}"
     assert "'” now?\\\\n\\\\n'" not in assessment, "Publish confirmation contains escaped literal newlines"
 print(f"Static site checks passed: {len(parser.buffers)} inline JavaScript block(s)")
+
+# Score corrections must be audited and authorization checked on the server.
+override_js = (root / "academic-auth.js").read_text(encoding="utf-8")
+assert "window.academicOverrideQuizScore" in override_js
+assert "/rpc/veritashub_override_score" in override_js
+assert "veritashub_score_overrides?select=" in override_js
+override_sql = (root / "supabase/veritashub_score_overrides.sql").read_text(encoding="utf-8")
+for required in ("enable row level security", "veritashub_lecturers", "veritashub_lecturer_classes", "for update", "previous_score", "revised_score", "revoke all on function public.veritashub_override_score"):
+    assert required in override_sql, f"Score override security regression: {required}"
