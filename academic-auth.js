@@ -559,6 +559,56 @@
       button.disabled = false;
     }
   };
+  window.academicPreviewDraftQuiz = async (quizId, title, button) => {
+    const status = el('lecturerQuizStatus');
+    const container = el('lecturerQuizResults');
+    button.disabled = true;
+    container.replaceChildren();
+    status.textContent = 'Loading your private draft preview…';
+    try {
+      const token = await accessToken();
+      const user = await request('/auth/v1/user', undefined, 'GET', token);
+      await verifiedTeachingClasses(token, user.id);
+      const drafts = await request('/rest/v1/veritashub_quizzes?id=eq.' +
+        encodeURIComponent(quizId) + '&lecturer_id=eq.' + encodeURIComponent(user.id) +
+        '&published=eq.false&select=id,title', undefined, 'GET', token);
+      if (!Array.isArray(drafts) || drafts.length !== 1) throw new Error('Draft not found or already published.');
+      const questions = await request('/rest/v1/veritashub_quiz_questions?quiz_id=eq.' +
+        encodeURIComponent(quizId) + '&select=id,prompt,options,correct_index&order=created_at.asc',
+        undefined, 'GET', token);
+      const heading = document.createElement('h3');
+      heading.textContent = 'Draft preview: ' + title;
+      const note = document.createElement('p');
+      note.textContent = 'Lecturer-only preview. Correct answers shown here are not visible to students.';
+      container.append(heading, note);
+      if (!Array.isArray(questions) || !questions.length) {
+        const empty = document.createElement('p');
+        empty.textContent = 'No questions found. Add questions before publishing.';
+        container.append(empty);
+      } else {
+        for (const [index, question] of questions.entries()) {
+          const block = document.createElement('section');
+          block.className = 'list-item';
+          const label = document.createElement('strong');
+          label.textContent = (index + 1) + '. ' + question.prompt;
+          block.append(label);
+          for (const [optionIndex, answer] of (Array.isArray(question.options) ? question.options : []).entries()) {
+            const option = document.createElement('p');
+            option.textContent = String.fromCharCode(65 + optionIndex) + '. ' + answer +
+              (optionIndex === question.correct_index ? ' ✓ Correct answer' : '');
+            block.append(option);
+          }
+          container.append(block);
+        }
+      }
+      status.textContent = 'Preview loaded: ' + (questions || []).length + ' question(s). Review before publishing.';
+      container.scrollIntoView({behavior:'smooth',block:'nearest'});
+    } catch (err) {
+      status.textContent = err.message || 'Unable to preview this draft.';
+    } finally {
+      button.disabled = false;
+    }
+  };
   window.academicLoadLecturerQuizzes = async () => {
     const status = el('lecturerQuizStatus');
     const list = el('lecturerQuizList');
@@ -589,6 +639,11 @@
           addQuestion.textContent = 'Add question';
           addQuestion.addEventListener('click', () => window.academicAddDraftQuestion(quiz.id, addQuestion));
           row.append(addQuestion);
+          const preview = document.createElement('button');
+          preview.type = 'button'; preview.className = 'btn light';
+          preview.textContent = 'Preview questions';
+          preview.addEventListener('click', () => window.academicPreviewDraftQuiz(quiz.id, quiz.title, preview));
+          row.append(preview);
           const button = document.createElement('button');
           button.type = 'button'; button.className = 'btn dark';
           button.textContent = 'Publish';
