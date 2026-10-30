@@ -807,7 +807,8 @@
       const percentages = records.map(a => 100 * Number(a.score) / Number(a.total));
       const mean = percentages.reduce((sum, value) => sum + value, 0) / percentages.length;
       const overview = document.createElement('p');
-      overview.textContent = 'Completed tests: ' + records.length + ' · Average score: ' + mean.toFixed(1) + '%';
+      overview.textContent = 'Completed tests: ' + records.length + ' · Average score: ' + mean.toFixed(1) + '%' +
+        ' · Best score: ' + Math.max(...percentages).toFixed(1) + '%';
       summary.append(overview);
       for (const attempt of records) {
         const row = document.createElement('div');
