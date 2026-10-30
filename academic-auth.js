@@ -488,6 +488,11 @@
       const prompt = el('quizDraftPrompt').value.trim();
       const options = el('quizDraftOptions').value.split(/\\r?\\n/).map(x => x.trim());
       const correct = Number(el('quizDraftCorrect').value);
+      const deadlineInput = el('quizDraftDeadline').value;
+      const deadlineDate = deadlineInput ? new Date(deadlineInput) : null;
+      if (deadlineDate && (!Number.isFinite(deadlineDate.getTime()) ||
+          deadlineDate.getTime() <= Date.now() + 60000))
+        throw new Error('The submission deadline must be in the future.');
       if (!classes.some(x => x.id === classId)) throw new Error('Select an assigned class.');
       if (title.length < 3 || title.length > 160 || prompt.length < 3 || prompt.length > 2000 ||
           options.length !== 4 || options.some(x => !x || x.length > 500) ||
@@ -497,7 +502,7 @@
       const response = await fetch(URL + '/rest/v1/veritashub_quizzes?select=id', {
         method:'POST', headers:{apikey:KEY,Authorization:'Bearer ' + token,
           'Content-Type':'application/json',Prefer:'return=representation'},
-        body:JSON.stringify({class_id:classId,lecturer_id:user.id,title,published:false})
+        body:JSON.stringify({class_id:classId,lecturer_id:user.id,title,published:false,deadline_at:deadlineDate ? deadlineDate.toISOString() : null})
       });
       const payload = await response.json();
       if (!response.ok) throw new Error(payload.message || 'Could not create draft.');
@@ -509,6 +514,7 @@
       el('quizDraftTitle').value = '';
       el('quizDraftPrompt').value = '';
       el('quizDraftOptions').value = '';
+      el('quizDraftDeadline').value = '';
       status.textContent = 'Private quiz draft saved. Student publishing and grading are coming in the next release.';
     } catch (err) { status.textContent = err.message || 'Unable to save quiz draft.'; }
   };
@@ -554,7 +560,7 @@
     el('studentQuizQuestions').replaceChildren();
     try {
       const token = await accessToken();
-      const quizzes = await request('/rest/v1/veritashub_quizzes?published=eq.true&select=id,title&order=created_at.desc',
+      const quizzes = await request('/rest/v1/veritashub_quizzes?published=eq.true&select=id,title,deadline_at&order=created_at.desc',
         undefined, 'GET', token);
       const results = await request('/rest/v1/veritashub_quiz_attempts?select=quiz_id,score,total',
         undefined, 'GET', token);
@@ -563,7 +569,7 @@
         const row = document.createElement('div');
         row.className = 'list-item';
         const title = document.createElement('strong');
-        title.textContent = quiz.title;
+        title.textContent = quiz.title + (quiz.deadline_at ? ' · Deadline: ' + new Date(quiz.deadline_at).toLocaleString() : ' · No deadline');
         row.append(title);
         if (completed.has(quiz.id)) {
           const result = document.createElement('span');
@@ -574,6 +580,10 @@
           const button = document.createElement('button');
           button.type = 'button'; button.className = 'btn dark';
           button.textContent = 'Take test';
+          if (quiz.deadline_at && new Date(quiz.deadline_at).getTime() <= Date.now()) {
+            button.disabled = true;
+            button.textContent = 'Deadline passed';
+          }
           button.addEventListener('click', () => window.academicTakeQuiz(quiz.id, quiz.title));
           row.append(button);
         }
