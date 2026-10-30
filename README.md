@@ -108,7 +108,8 @@ If the SQL has not been run yet, the website will show that the shared counter i
 - [x] Verified lecturer multiple-choice quiz draft creation — [#8](https://github.com/V1R0X-Coder/veritas-hub/pull/8)
 - [x] Publish quiz, take quiz once, server-side automatic grading, private student results — [#9](https://github.com/V1R0X-Coder/veritas-hub/pull/9)
 - [x] Optional submission deadline with server-side enforcement — [#10](https://github.com/V1R0X-Coder/veritas-hub/pull/10) (pending release verification)
-- [ ] Multi-question editing, marks per question, quiz preview and configurable late-submission rules
+- [x] Verified lecturers can add multiple questions to unpublished quiz drafts using existing question-insert RLS — [#19](https://github.com/V1R0X-Coder/veritas-hub/pull/19); authenticated browser verification pending
+- [ ] Existing-question editing, marks per question, quiz preview and configurable late-submission rules
 - [x] Lecturer-only aggregate quiz results (submissions, average and highest percentages) — [#11](https://github.com/V1R0X-Coder/veritas-hub/pull/11); authenticated browser verification outstanding
 - [x] Private student score history and average percentage dashboard (existing own-attempt RLS) — [#18](https://github.com/V1R0X-Coder/veritas-hub/pull/18); authenticated browser verification outstanding
 - [ ] Controlled score overrides and answer-key release controls
