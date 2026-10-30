@@ -518,6 +518,47 @@
       status.textContent = 'Private quiz draft saved. Student publishing and grading are coming in the next release.';
     } catch (err) { status.textContent = err.message || 'Unable to save quiz draft.'; }
   };
+  window.academicAddDraftQuestion = async (quizId, button) => {
+    const status = el('lecturerQuizStatus');
+    const prompt = window.prompt('Enter the new question (3–2000 characters):');
+    if (prompt === null) return;
+    const question = prompt.trim();
+    if (question.length < 3 || question.length > 2000) {
+      status.textContent = 'Question must contain 3–2000 characters.'; return;
+    }
+    const answers = [];
+    for (let i = 0; i < 4; i++) {
+      const answer = window.prompt('Answer option ' + (i+1) + ' of 4:');
+      if (answer === null) return;
+      if (!answer.trim() || answer.trim().length > 500) {
+        status.textContent = 'Every answer must contain 1–500 characters.'; return;
+      }
+      answers.push(answer.trim());
+    }
+    const chosen = window.prompt('Correct answer number (1–4):');
+    if (chosen === null) return;
+    if (!/^[1-4]$/.test(chosen.trim())) {
+      status.textContent = 'Choose a correct answer from 1 to 4.'; return;
+    }
+    button.disabled = true;
+    try {
+      const token = await accessToken();
+      const user = await request('/auth/v1/user', undefined, 'GET', token);
+      await verifiedTeachingClasses(token, user.id);
+      const drafts = await request('/rest/v1/veritashub_quizzes?id=eq.' +
+        encodeURIComponent(quizId) + '&lecturer_id=eq.' + encodeURIComponent(user.id) +
+        '&published=eq.false&select=id', undefined, 'GET', token);
+      if (!drafts || drafts.length !== 1) throw new Error('Draft is unavailable or already published.');
+      await request('/rest/v1/veritashub_quiz_questions', {
+        quiz_id:quizId, prompt:question, options:answers, correct_index:Number(chosen.trim())-1
+      }, 'POST', token);
+      status.textContent = 'Question added to your private draft. Review the draft before publishing.';
+    } catch (err) {
+      status.textContent = err.message || 'Unable to add question.';
+    } finally {
+      button.disabled = false;
+    }
+  };
   window.academicLoadLecturerQuizzes = async () => {
     const status = el('lecturerQuizStatus');
     const list = el('lecturerQuizList');
@@ -543,6 +584,11 @@
           row.append(results);
         }
         if (!quiz.published) {
+          const addQuestion = document.createElement('button');
+          addQuestion.type = 'button'; addQuestion.className = 'btn light';
+          addQuestion.textContent = 'Add question';
+          addQuestion.addEventListener('click', () => window.academicAddDraftQuestion(quiz.id, addQuestion));
+          row.append(addQuestion);
           const button = document.createElement('button');
           button.type = 'button'; button.className = 'btn dark';
           button.textContent = 'Publish';
