@@ -77,7 +77,7 @@ begin
   then raise exception 'Invalid replacement file'; end if;
   -- Confirm the uploaded object exists in the private bucket.
   if not exists (select 1 from storage.objects
-    where bucket_id='veritashub-class-files' and name=p_storage_path and owner_id=auth.uid()::text)
+    where bucket_id='veritashub-class-files' and name=p_storage_path)
   then raise exception 'Replacement upload not found'; end if;
   if exists (select 1 from public.veritashub_class_file_versions where storage_path=p_storage_path) then
     raise exception 'File version already recorded';
