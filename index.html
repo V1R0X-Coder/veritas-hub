@@ -78,7 +78,7 @@ body{font-family:Arial,Helvetica,sans-serif;letter-spacing:0}
 #nav button:focus-visible{outline:2px solid var(--lime);outline-offset:2px}
 #nav .nav-group:has(.active)>.nav-group-toggle{background:#ffffff16;color:#fff}
 @media(max-width:700px){#nav .nav-group-toggle,#nav .nav-submenu button{min-height:46px}}
-@media(max-width:800px){
+@media(max-width:760px){
  #sidebar.open{z-index:101}
  #mobileMenuButton:focus-visible{outline:2px solid var(--green);outline-offset:3px}
 }
@@ -414,7 +414,7 @@ function toggleMenu(open){
  const sidebar=document.getElementById('sidebar');
  const overlay=document.getElementById('overlay');
  const trigger=document.getElementById('mobileMenuButton');
- const mobile=window.matchMedia('(max-width: 800px)').matches;
+ const mobile=window.matchMedia('(max-width: 760px)').matches;
  const visible=Boolean(open&&mobile);
  sidebar.classList.toggle('open',visible);
  overlay.classList.toggle('show',visible);
@@ -434,7 +434,7 @@ document.addEventListener('keydown',event=>{
    document.getElementById('mobileMenuButton').focus({preventScroll:true});
  }
 });
-window.matchMedia('(max-width: 800px)').addEventListener('change',()=>toggleMenu(false));
+window.matchMedia('(max-width: 760px)').addEventListener('change',()=>toggleMenu(false));
 let toastTimer;function notify(message){const t=document.getElementById('toast');t.textContent=message;t.classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.classList.remove('show'),2800);}
 function getData(key){try{return JSON.parse(localStorage.getItem('veritas-'+key)||'[]')}catch(e){return []}}
 function setData(key,val){try{localStorage.setItem('veritas-'+key,JSON.stringify(val));return true}catch(e){notify('Could not save here. Try opening this file in a browser or Live Server.');return false}}
