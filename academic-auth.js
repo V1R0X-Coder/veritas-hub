@@ -559,6 +559,58 @@
       button.disabled = false;
     }
   };
+  window.academicEditDraftQuestion = async (quizId, question, title, button) => {
+    const status = el('lecturerQuizStatus');
+    const promptText = window.prompt('Edit question:', question.prompt);
+    if (promptText === null) return;
+    const promptValue = promptText.trim();
+    if (promptValue.length < 3 || promptValue.length > 2000) {
+      status.textContent = 'Question must contain 3–2000 characters.'; return;
+    }
+    const options = [];
+    for (let i = 0; i < 4; i++) {
+      const answer = window.prompt('Edit answer ' + (i + 1) + ':', question.options[i]);
+      if (answer === null) return;
+      if (!answer.trim() || answer.trim().length > 500) {
+        status.textContent = 'Each answer must contain 1–500 characters.'; return;
+      }
+      options.push(answer.trim());
+    }
+    if (new Set(options.map(answer => answer.toLocaleLowerCase())).size !== 4) {
+      status.textContent = 'Each answer option must be different.'; return;
+    }
+    const selected = window.prompt('Correct answer (1–4):', String(question.correct_index + 1));
+    if (selected === null) return;
+    if (!/^[1-4]$/.test(selected.trim())) {
+      status.textContent = 'Choose a correct answer from 1 to 4.'; return;
+    }
+    button.disabled = true;
+    try {
+      const token = await accessToken();
+      const user = await request('/auth/v1/user', undefined, 'GET', token);
+      await verifiedTeachingClasses(token, user.id);
+      const drafts = await request('/rest/v1/veritashub_quizzes?id=eq.' +
+        encodeURIComponent(quizId) + '&lecturer_id=eq.' + encodeURIComponent(user.id) +
+        '&published=eq.false&select=id', undefined, 'GET', token);
+      if (!Array.isArray(drafts) || drafts.length !== 1) throw new Error('Draft no longer editable.');
+      const updated = await request('/rest/v1/veritashub_quiz_questions?id=eq.' +
+        encodeURIComponent(question.id) + '&quiz_id=eq.' + encodeURIComponent(quizId) +
+        '&select=id', {prompt:promptValue,options,correct_index:Number(selected.trim())-1}, 'PATCH', token);
+      // Re-read the draft to confirm the update actually persisted under RLS.
+      const verify = await request('/rest/v1/veritashub_quiz_questions?id=eq.' +
+        encodeURIComponent(question.id) + '&quiz_id=eq.' + encodeURIComponent(quizId) +
+        '&select=id,prompt,options,correct_index', undefined, 'GET', token);
+      if (!Array.isArray(verify) || verify.length !== 1 ||
+          verify[0].prompt !== promptValue || JSON.stringify(verify[0].options) !== JSON.stringify(options) ||
+          verify[0].correct_index !== Number(selected.trim())-1) {
+        throw new Error('Question update could not be verified. Check your permissions.');
+      }
+      await window.academicPreviewDraftQuiz(quizId, title, button);
+      status.textContent = 'Draft question updated successfully.';
+    } catch (err) {
+      status.textContent = err.message || 'Unable to update question.';
+    } finally { button.disabled = false; }
+  };
   window.academicPreviewDraftQuiz = async (quizId, title, button) => {
     const status = el('lecturerQuizStatus');
     const container = el('lecturerQuizResults');
@@ -630,6 +682,11 @@
               (optionIndex === question.correct_index ? ' ✓ Correct answer' : '');
             block.append(option);
           }
+          const edit = document.createElement('button');
+          edit.type = 'button'; edit.className = 'btn light';
+          edit.textContent = 'Edit question';
+          edit.addEventListener('click', () => window.academicEditDraftQuestion(quizId, question, title, edit));
+          block.append(edit);
           container.append(block);
         }
       }
