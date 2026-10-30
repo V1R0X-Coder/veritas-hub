@@ -152,6 +152,7 @@ If the SQL has not been run yet, the website will show that the shared counter i
 - [ ] Validated walking paths, step-by-step campus navigation and distance estimates
 - [x] Responsive campus map layout with phone-sized single-column view, 44px touch targets and readable directory cards — [#14](https://github.com/V1R0X-Coder/veritas-hub/pull/14); real-device smoke testing outstanding
 - [ ] Low-bandwidth/mobile performance, offline fallback and location privacy review
+- [x] Bounded 24-hour offline reference for previously published campus place listings, explicit stale-data warning, no offline map pins or device GPS collection — implementation PR pending; browser/device verification outstanding
 - [ ] Campus map usability testing on Android and desktop; validate every route before labeling it official
 
 ### Live classrooms — requirements 9–20 and lecturer controls 21–31
