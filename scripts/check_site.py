@@ -45,4 +45,12 @@ external = root / "academic-auth.js"
 if 'src="academic-auth.js"' in source:
     assert external.is_file(), "Missing academic auth JavaScript"
     subprocess.run(["node", "--check", str(external)], check=True)
+if 'academicUploadClassFile()' in source:
+    assert 'academicLoadStudentFiles()' in source, "Student document controls missing"
+    assert external.is_file(), "Missing document integration"
+    script = external.read_text(encoding="utf-8")
+    for required in ('window.academicUploadClassFile', 'window.academicLoadStudentFiles',
+                     'window.academicLoadLecturerFiles', "FILE_BUCKET = 'veritashub-class-files'"):
+        assert required in script, f"Missing academic document handler: {required}"
+    assert (root / "supabase/veritashub_private_class_files.sql").is_file(), "Missing document storage migration"
 print(f"Static site checks passed: {len(parser.buffers)} inline JavaScript block(s)")
